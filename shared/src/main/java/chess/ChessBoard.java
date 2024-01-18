@@ -34,6 +34,27 @@ public class ChessBoard {
     }
 
     /**
+     * Checks if a position is within the bounds of the chessboard.
+     *
+     * @param position The position to check
+     * @return true if the position is within the bounds of the chessboard, false otherwise
+     */
+    public boolean isPositionValid(ChessPosition position) {
+        return position.getRow() >= 0 && position.getRow() < squares.length &&
+                position.getColumn() >= 0 && position.getColumn() < squares[position.getRow()].length;
+    }
+
+    /**
+     * Checks if there is a piece at the specified position on the chessboard.
+     *
+     * @param position The position to check for a piece
+     * @return true if there is a piece at the position, false otherwise
+     */
+    public boolean isPieceAt(ChessPosition position) {
+        return getPiece(position) != null;
+    }
+
+    /**
      * Sets the board to the default starting board
      * (How the game of chess normally starts)
      */
@@ -41,3 +62,4 @@ public class ChessBoard {
         throw new RuntimeException("Not implemented");
     }
 }
+
