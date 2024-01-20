@@ -3,6 +3,8 @@ package chess;
 import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Objects;
+
 
 /**
  * Represents a single chess piece
@@ -54,52 +56,47 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        // Create an empty list to store all possible moves for the bishop.
         List<ChessMove> moves = new ArrayList<>();
+        int[][] directions = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}}; // The four diagonal directions
 
-        // Define the four diagonal directions in which a bishop can move.
-        // Each direction is represented as a pair of integers (deltaX, deltaY).
-        // For example, (1, 1) represents moving diagonally up-right.
-        int[][] directions = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
-
-        // Iterate over each of the four directions.
         for (int[] direction : directions) {
-            // Extract the x (deltaX) and y (deltaY) movement components for this direction.
             int deltaX = direction[0];
             int deltaY = direction[1];
+            ChessPosition position = new ChessPosition(myPosition.getRow() + deltaX, myPosition.getColumn() + deltaY);
 
-            // Start from the current position of the bishop.
-            ChessPosition position = myPosition;
-
-            // Keep moving the bishop in the current direction.
-            while (true) {
-                // Calculate the bishop's next position based on its movement delta.
-                position = new ChessPosition(position.getRow() + deltaX, position.getColumn() + deltaY);
-
-                // Check if the new position is still on the board.
-                // If it's not, break out of the while loop and stop exploring this direction.
-                if (!board.isPositionValid(position)) {
-                    break;
-                }
-
-                // Check if there is a piece at the new position.
-                if (board.isPieceAt(position)) {
-                    // Check if the piece at the new position is an opponent's piece.
-                    // This is done by comparing the team colors of the two pieces.
+            while (board.isPositionValid(position)) {
+                if (!board.isPieceAt(position)) {
+                    // Add move if the square is empty
+                    moves.add(new ChessMove(myPosition, position, null));
+                } else {
+                    // Check if it's an enemy piece
                     if (board.getPiece(position).getTeamColor() != this.getTeamColor()) {
-                        // If it's an opponent's piece, add this move as it captures the opponent's piece.
-                        moves.add(new ChessMove(myPosition, position, this.getPieceType()));
+                        // Capture enemy piece
+                        moves.add(new ChessMove(myPosition, position, null));
                     }
-                    // Break out of the while loop as the bishop can't jump over other pieces.
+                    // Stop adding moves whether it's an enemy or an ally
                     break;
                 }
-
-                // If the position is valid and there's no piece, add this as a valid move.
-                moves.add(new ChessMove(myPosition, position, this.getPieceType()));
+                // Move to the next square in the diagonal direction
+                position = new ChessPosition(position.getRow() + deltaX, position.getColumn() + deltaY);
             }
         }
 
-        // Return the list of all valid moves found for the bishop.
         return moves;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ChessPiece that = (ChessPiece) o;
+        return pieceType == that.pieceType && teamColor == that.teamColor;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pieceType, teamColor);
+    }
+
+
 }

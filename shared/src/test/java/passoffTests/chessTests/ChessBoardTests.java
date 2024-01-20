@@ -39,10 +39,17 @@ public class ChessBoardTests {
                 |R|N|B|Q|K|B|N|R|
                 """);
 
-        var actualBoard = getNewBoard();
+        var actualBoard = new ChessBoard();
         actualBoard.resetBoard();
 
         Assertions.assertEquals(expectedBoard, actualBoard);
+    }
+
+    private String pieceDetails(ChessPiece piece) {
+        if (piece == null) {
+            return "null";
+        }
+        return piece.getTeamColor() + " " + piece.getPieceType();
     }
 
 }
