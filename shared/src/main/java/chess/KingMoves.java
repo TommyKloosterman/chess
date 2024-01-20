@@ -4,29 +4,24 @@ import java.util.Collection;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BishopMoves {
+public class KingMoves {
   public static Collection<ChessMove> calculateMoves(ChessBoard board, ChessPosition myPosition, ChessPiece.PieceType pieceType, ChessGame.TeamColor teamColor) {
     List<ChessMove> moves = new ArrayList<>();
-    int[][] directions = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}}; // The four diagonal directions
+    // The king can move one square in any direction
+    int[][] directions = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}, {1, 1}, {1, -1}, {-1, -1}, {-1, 1}};
 
     for (int[] direction : directions) {
       int deltaX = direction[0];
       int deltaY = direction[1];
       ChessPosition position = new ChessPosition(myPosition.getRow() + deltaX, myPosition.getColumn() + deltaY);
 
-      while (board.isPositionValid(position)) {
-        if (!board.isPieceAt(position)) {
-          moves.add(new ChessMove(myPosition, position, null));
-        } else {
-          if (board.getPiece(position).getTeamColor() != teamColor) {
-            moves.add(new ChessMove(myPosition, position, null));
-          }
-          break;
+      if (board.isPositionValid(position)) {
+        if (!board.isPieceAt(position) || board.getPiece(position).getTeamColor() != teamColor) {
+          moves.add(new ChessMove(myPosition, position, null)); // No promotion for king
         }
-        position = new ChessPosition(position.getRow() + deltaX, position.getColumn() + deltaY);
       }
     }
+
     return moves;
   }
 }
-

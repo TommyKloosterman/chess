@@ -56,33 +56,14 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        List<ChessMove> moves = new ArrayList<>();
-        int[][] directions = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}}; // The four diagonal directions
-
-        for (int[] direction : directions) {
-            int deltaX = direction[0];
-            int deltaY = direction[1];
-            ChessPosition position = new ChessPosition(myPosition.getRow() + deltaX, myPosition.getColumn() + deltaY);
-
-            while (board.isPositionValid(position)) {
-                if (!board.isPieceAt(position)) {
-                    // Add move if the square is empty
-                    moves.add(new ChessMove(myPosition, position, null));
-                } else {
-                    // Check if it's an enemy piece
-                    if (board.getPiece(position).getTeamColor() != this.getTeamColor()) {
-                        // Capture enemy piece
-                        moves.add(new ChessMove(myPosition, position, null));
-                    }
-                    // Stop adding moves whether it's an enemy or an ally
-                    break;
-                }
-                // Move to the next square in the diagonal direction
-                position = new ChessPosition(position.getRow() + deltaX, position.getColumn() + deltaY);
-            }
+        if (this.pieceType == PieceType.KING) {
+            return KingMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+        } else if (this.pieceType == PieceType.BISHOP) {
+            // Bishop logic already implemented
+            return BishopMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
         }
-
-        return moves;
+        // ... handle other piece types ...
+        return null;
     }
 
     @Override
