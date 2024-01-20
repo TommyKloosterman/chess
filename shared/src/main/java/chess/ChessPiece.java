@@ -56,14 +56,18 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        if (this.pieceType == PieceType.KING) {
-            return KingMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
-        } else if (this.pieceType == PieceType.BISHOP) {
-            // Bishop logic already implemented
-            return BishopMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+        switch (this.pieceType) {
+            case KING:
+                return KingMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            case BISHOP:
+                return BishopMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            case KNIGHT:
+                return KnightMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            // ... handle other piece types ...
+            default:
+                // Handle other cases or throw an exception
+                throw new UnsupportedOperationException("Piece type not supported");
         }
-        // ... handle other piece types ...
-        return null;
     }
 
     @Override
