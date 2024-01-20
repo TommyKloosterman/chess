@@ -254,5 +254,4 @@ public class PawnMoveTests {
 
         Assertions.assertEquals(validMoves, testPiece.pieceMoves(board, start), "Wrong moves");
     }
-
 }
