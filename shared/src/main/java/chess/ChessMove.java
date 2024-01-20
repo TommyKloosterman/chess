@@ -45,8 +45,11 @@ public class ChessMove {
 
     @Override
     public String toString() {
+        // Adjust toString to handle promotion correctly
         String moveString = "Move from " + startPosition + " to " + endPosition;
-        moveString += " with promotion to " + (promotionPiece != null ? promotionPiece : "NONE");
+        if (promotionPiece != null) {
+            moveString += " with promotion to " + promotionPiece;
+        }
         return moveString;
     }
 }

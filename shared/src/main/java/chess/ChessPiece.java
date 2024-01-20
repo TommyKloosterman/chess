@@ -61,12 +61,14 @@ public class ChessPiece {
                 return KingMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
             case QUEEN:
                 return QueenMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            case ROOK:
+                return RookMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
             case BISHOP:
                 return BishopMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
             case KNIGHT:
                 return KnightMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
-            case ROOK:
-                return RookMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            case PAWN:
+                return PawnMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
             // ... handle other piece types ...
             default:
                 throw new UnsupportedOperationException("Piece type not supported");
