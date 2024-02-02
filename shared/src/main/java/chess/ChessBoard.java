@@ -25,6 +25,7 @@ public class ChessBoard {
     public void addPiece(ChessPosition position, ChessPiece piece) {
         if (isPositionValid(position)) {
             squares[position.getRow() - 1][position.getColumn() - 1] = piece;
+            piece.setCurrentPosition(position);
         } else {
             throw new IllegalArgumentException("Position out of bounds");
         }
