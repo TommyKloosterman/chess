@@ -175,7 +175,26 @@ public class ChessGame {
 
 
     public boolean isInStalemate(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        // If the team is in check, it's not a stalemate.
+        if (isInCheck(teamColor)) {
+            return false;
+        }
+
+        // Get all pieces for the team.
+        Collection<ChessPiece> teamPieces = getAllPiecesOfTeam(teamColor);
+
+        // Iterate over all pieces and check if any move is possible.
+        for (ChessPiece piece : teamPieces) {
+            Collection<ChessMove> moves = piece.pieceMoves(board, piece.getCurrentPosition());
+            for (ChessMove move : moves) {
+                if (isValidMove(move)) {
+                    return false; // There's at least one valid move, so it's not a stalemate.
+                }
+            }
+        }
+
+        // If no valid moves are available for any piece, it's a stalemate.
+        return true;
     }
 
     public void setBoard(ChessBoard board) {
