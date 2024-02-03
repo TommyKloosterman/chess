@@ -180,6 +180,12 @@ public class ChessGame {
             return false;
         }
 
+        // Remember the original current player
+        TeamColor originalCurrentPlayer = currentPlayer;
+
+        // Set the current player to the team being checked for stalemate
+        setTeamTurn(teamColor);
+
         // Get all pieces for the team.
         Collection<ChessPiece> teamPieces = getAllPiecesOfTeam(teamColor);
 
@@ -188,10 +194,15 @@ public class ChessGame {
             Collection<ChessMove> moves = piece.pieceMoves(board, piece.getCurrentPosition());
             for (ChessMove move : moves) {
                 if (isValidMove(move)) {
+                    // Reset the current player to the original
+                    setTeamTurn(originalCurrentPlayer);
                     return false; // There's at least one valid move, so it's not a stalemate.
                 }
             }
         }
+
+        // Reset the current player to the original
+        setTeamTurn(originalCurrentPlayer);
 
         // If no valid moves are available for any piece, it's a stalemate.
         return true;
