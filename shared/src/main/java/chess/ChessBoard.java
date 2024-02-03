@@ -25,11 +25,14 @@ public class ChessBoard {
     public void addPiece(ChessPosition position, ChessPiece piece) {
         if (isPositionValid(position)) {
             squares[position.getRow() - 1][position.getColumn() - 1] = piece;
-            piece.setCurrentPosition(position);
+            if (piece != null) {
+                piece.setCurrentPosition(position); // Update the current position of the piece
+            }
         } else {
             throw new IllegalArgumentException("Position out of bounds");
         }
     }
+
 
     /**
      * Gets a chess piece on the chessboard

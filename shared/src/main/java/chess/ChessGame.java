@@ -38,9 +38,30 @@ public class ChessGame {
         if (!isValidMove(move)) {
             throw new InvalidMoveException("Invalid move");
         }
-        board.addPiece(move.getEndPosition(), board.getPiece(move.getStartPosition()));
-        board.addPiece(move.getStartPosition(), null);
-        setTeamTurn(currentPlayer == TeamColor.WHITE ? TeamColor.BLACK : TeamColor.WHITE);
+
+        ChessPiece piece = board.getPiece(move.getStartPosition());
+
+        // Check for pawn promotion
+        if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {
+            int promotionRow = piece.getTeamColor() == TeamColor.WHITE ? 8 : 1;
+            if (move.getEndPosition().getRow() == promotionRow) {
+                // Replace the pawn with the promoted piece
+                ChessPiece promotedPiece = new ChessPiece(piece.getTeamColor(), move.getPromotionPiece());
+                board.addPiece(move.getEndPosition(), promotedPiece);
+                board.addPiece(move.getStartPosition(), null);
+            } else {
+                // Execute the move for non-promotion cases
+                board.addPiece(move.getEndPosition(), piece);
+                board.addPiece(move.getStartPosition(), null);
+            }
+        } else {
+            // Execute the move for non-pawn pieces
+            board.addPiece(move.getEndPosition(), piece);
+            board.addPiece(move.getStartPosition(), null);
+        }
+
+        // Toggle currentPlayer to the next player
+        currentPlayer = (currentPlayer == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
     }
 
     private boolean isValidMove(ChessMove move) {
@@ -100,6 +121,10 @@ public class ChessGame {
 
     public boolean isInCheck(TeamColor teamColor) {
         ChessPosition kingPosition = findKingPosition(teamColor);
+        if (kingPosition == null) {
+            // Handle the case where the King is not found (e.g., return false or handle appropriately)
+            return false;
+        }
         for (ChessPiece piece : getAllPiecesOfOpposingTeam(teamColor)) {
             Collection<ChessMove> moves = piece.pieceMoves(board, piece.getCurrentPosition());
             for (ChessMove move : moves) {
@@ -137,7 +162,8 @@ public class ChessGame {
                 }
             }
         }
-        throw new IllegalStateException("King not found on board for team " + teamColor);
+        // Return null if the King is not found
+        return null;
     }
 
     private Collection<ChessPiece> getAllPiecesOfOpposingTeam(TeamColor teamColor) {
