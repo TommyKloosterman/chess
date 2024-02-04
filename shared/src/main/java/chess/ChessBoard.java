@@ -3,12 +3,6 @@ package chess;
 import java.util.Arrays;
 import java.util.Objects;
 
-/**
- * A chessboard that can hold and rearrange chess pieces.
- * <p>
- * Note: You can add to this class, but you may not alter
- * the signature of the existing methods.
- */
 public class ChessBoard {
     private ChessPiece[][] squares = new ChessPiece[8][8];
 
@@ -16,12 +10,20 @@ public class ChessBoard {
         // Constructor logic (if any)
     }
 
-    /**
-     * Adds a chess piece to the chessboard
-     *
-     * @param position where to add the piece to
-     * @param piece    the piece to add
-     */
+    // Copy constructor
+    public ChessBoard(ChessBoard originalBoard) {
+        this.squares = new ChessPiece[8][8];
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                ChessPiece originalPiece = originalBoard.squares[row][col];
+                if (originalPiece != null) {
+                    this.squares[row][col] = new ChessPiece(originalPiece.getTeamColor(), originalPiece.getPieceType());
+                    this.squares[row][col].setCurrentPosition(new ChessPosition(row + 1, col + 1));
+                }
+            }
+        }
+    }
+
     public void addPiece(ChessPosition position, ChessPiece piece) {
         if (isPositionValid(position)) {
             squares[position.getRow() - 1][position.getColumn() - 1] = piece;
@@ -33,13 +35,6 @@ public class ChessBoard {
         }
     }
 
-
-    /**
-     * Gets a chess piece on the chessboard
-     *
-     * @param position The position to get the piece from
-     * @return Either the piece at the position, or null if no piece is at that position
-     */
     public ChessPiece getPiece(ChessPosition position) {
         if (!isPositionValid(position)) {
             throw new IllegalArgumentException("Position out of bounds");
@@ -47,23 +42,11 @@ public class ChessBoard {
         return squares[position.getRow() - 1][position.getColumn() - 1];
     }
 
-    /**
-     * Checks if a position is within the bounds of the chessboard.
-     *
-     * @param position The position to check
-     * @return true if the position is within the bounds of the chessboard, false otherwise
-     */
     public boolean isPositionValid(ChessPosition position) {
         return position.getRow() >= 1 && position.getRow() <= 8 &&
                 position.getColumn() >= 1 && position.getColumn() <= 8;
     }
 
-    /**
-     * Checks if there is a piece at the specified position on the chessboard.
-     *
-     * @param position The position to check for a piece
-     * @return true if there is a piece at the position, false otherwise
-     */
     public boolean isPieceAt(ChessPosition position) {
         return getPiece(position) != null;
     }
@@ -73,26 +56,13 @@ public class ChessBoard {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ChessBoard that = (ChessBoard) o;
-
-        for (int row = 0; row < squares.length; row++) {
-            for (int col = 0; col < squares[row].length; col++) {
-                if (!Objects.equals(squares[row][col], that.squares[row][col])) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        return Arrays.deepEquals(squares, that.squares);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(squares);
+        return Arrays.deepHashCode(squares);
     }
-
-    /**
-     * Sets the board to the default starting board.
-     * (How the game of chess normally starts)
-     */
     public void resetBoard() {
         // Clear the board
         for (int row = 0; row < squares.length; row++) {
