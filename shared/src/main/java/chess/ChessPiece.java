@@ -35,6 +35,10 @@ public class ChessPiece {
         ROOK,
         PAWN
     }
+
+    public void setHasMoved(boolean moved) {
+        this.hasMoved = moved;
+    }
     public boolean hasMoved() {
         return hasMoved;
     }
