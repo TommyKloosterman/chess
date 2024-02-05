@@ -17,7 +17,6 @@ public class ChessPiece {
     private ChessGame.TeamColor teamColor;
     private PieceType pieceType;
     private ChessPosition currentPosition;
-    private boolean hasMoved = false;
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.teamColor = pieceColor;
@@ -36,12 +35,6 @@ public class ChessPiece {
         PAWN
     }
 
-    public void setHasMoved(boolean moved) {
-        this.hasMoved = moved;
-    }
-    public boolean hasMoved() {
-        return hasMoved;
-    }
 
     /**
      * @return Which team this chess piece belongs to
