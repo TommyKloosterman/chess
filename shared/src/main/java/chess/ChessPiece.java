@@ -1,6 +1,10 @@
 package chess;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Objects;
+
 
 /**
  * Represents a single chess piece
@@ -10,7 +14,13 @@ import java.util.Collection;
  */
 public class ChessPiece {
 
+    private ChessGame.TeamColor teamColor;
+    private PieceType pieceType;
+    private ChessPosition currentPosition;
+
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
+        this.teamColor = pieceColor;
+        this.pieceType = type;
     }
 
     /**
@@ -25,18 +35,27 @@ public class ChessPiece {
         PAWN
     }
 
+
     /**
      * @return Which team this chess piece belongs to
      */
     public ChessGame.TeamColor getTeamColor() {
-        throw new RuntimeException("Not implemented");
+        return this.teamColor;
     }
 
     /**
      * @return which type of chess piece this piece is
      */
     public PieceType getPieceType() {
-        throw new RuntimeException("Not implemented");
+        return this.pieceType;
+    }
+
+    public void setCurrentPosition(ChessPosition position) {
+        this.currentPosition = position;
+    }
+
+    public ChessPosition getCurrentPosition() {
+        return currentPosition;
     }
 
     /**
@@ -47,6 +66,37 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        throw new RuntimeException("Not implemented");
+        switch (this.pieceType) {
+            case KING:
+                return KingMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            case QUEEN:
+                return QueenMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            case ROOK:
+                return RookMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            case BISHOP:
+                return BishopMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            case KNIGHT:
+                return KnightMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            case PAWN:
+                return PawnMoves.calculateMoves(board, myPosition, this.pieceType, this.teamColor);
+            // ... handle other piece types ...
+            default:
+                throw new UnsupportedOperationException("Piece type not supported");
+        }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ChessPiece that = (ChessPiece) o;
+        return pieceType == that.pieceType && teamColor == that.teamColor;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pieceType, teamColor);
+    }
+
+
 }
