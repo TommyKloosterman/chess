@@ -9,7 +9,6 @@ public class BishopMoves {
     List<ChessMove> moves = new ArrayList<>();
     int[][] directions = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}}; // The four diagonal directions
 
-
     for (int[] direction : directions) {
       int deltaX = direction[0];
       int deltaY = direction[1];
