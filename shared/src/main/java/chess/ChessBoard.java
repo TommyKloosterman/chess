@@ -56,13 +56,25 @@ public class ChessBoard {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ChessBoard that = (ChessBoard) o;
-        return Arrays.deepEquals(squares, that.squares);
+        // Compare every piece on the board for equality
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                ChessPiece thisPiece = this.squares[row][col];
+                ChessPiece thatPiece = that.squares[row][col];
+                if (!Objects.equals(thisPiece, thatPiece)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override
     public int hashCode() {
+        // Use a deep hash code to incorporate all pieces in the board
         return Arrays.deepHashCode(squares);
     }
+
     public void resetBoard() {
         // Clear the board
         for (int row = 0; row < squares.length; row++) {
@@ -99,5 +111,4 @@ public class ChessBoard {
         addPiece(new ChessPosition(8, 7), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.KNIGHT));
         addPiece(new ChessPosition(8, 8), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.ROOK));
     }
-
 }

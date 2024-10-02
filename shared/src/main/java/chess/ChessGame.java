@@ -2,7 +2,6 @@ package chess;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 public class ChessGame {
     private ChessBoard board;
@@ -10,6 +9,7 @@ public class ChessGame {
 
     public ChessGame() {
         this.board = new ChessBoard();
+        this.board.resetBoard(); // Initialize the board with the starting positions
         this.currentPlayer = TeamColor.WHITE;
     }
 
@@ -48,6 +48,7 @@ public class ChessGame {
 
         return validMoves;
     }
+
     private boolean isMoveLegal(ChessMove move) {
         ChessPiece piece = board.getPiece(move.getStartPosition());
         if (piece == null) {
@@ -248,7 +249,6 @@ public class ChessGame {
         }
         return teamPieces;
     }
-
 
     public boolean isInStalemate(TeamColor teamColor) {
         // If the team is in check, it's not a stalemate.
