@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class KnightMoves {
   public static Collection<ChessMove> calculateMoves(ChessBoard board, ChessPosition myPosition, ChessPiece.PieceType pieceType, ChessGame.TeamColor teamColor) {
     List<ChessMove> moves = new ArrayList<>();
