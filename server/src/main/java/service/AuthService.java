@@ -38,6 +38,11 @@ public class AuthService {
     }
   }
 
+  // Retrieves the AuthData for a given auth token.
+  public AuthData getAuth(String authToken) throws DataAccessException {
+    return authDAO.getAuth(authToken);
+  }
+
   // Clears all authentication data.
   public void clear() {
     authDAO.clear();

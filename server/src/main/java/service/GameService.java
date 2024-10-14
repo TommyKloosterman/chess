@@ -1,5 +1,6 @@
 package service;
 
+import java.util.Map;
 import dataaccess.GameDAO;
 import dataaccess.DataAccessException;
 import model.GameData;
@@ -25,6 +26,33 @@ public class GameService {
   // Retrieves a list of all games.
   public Map<Integer, GameData> listGames() {
     return gameDAO.listGames();
+  }
+
+  // Allows a player to join a game as either the white or black player.
+  public void joinGame(int gameID, String playerColor, String username) throws DataAccessException {
+    // Retrieve the game by its gameID.
+    GameData game = gameDAO.getGame(gameID);
+
+    // Check if the requested color is available and assign the player.
+    if (playerColor.equalsIgnoreCase("WHITE")) {
+      if (game.whiteUsername() == null) {
+        // Assign the user as the white player.
+        game = new GameData(game.gameID(), username, game.blackUsername(), game.gameName(), game.game());
+        gameDAO.insertGame(game);  // Update the game in the DAO
+      } else {
+        throw new DataAccessException("White player spot already taken.");
+      }
+    } else if (playerColor.equalsIgnoreCase("BLACK")) {
+      if (game.blackUsername() == null) {
+        // Assign the user as the black player.
+        game = new GameData(game.gameID(), game.whiteUsername(), username, game.gameName(), game.game());
+        gameDAO.insertGame(game);  // Update the game in the DAO
+      } else {
+        throw new DataAccessException("Black player spot already taken.");
+      }
+    } else {
+      throw new DataAccessException("Invalid player color.");
+    }
   }
 
   // Clears all game data.
