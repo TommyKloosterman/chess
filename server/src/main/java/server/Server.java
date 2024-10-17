@@ -18,6 +18,7 @@ import exceptions.InvalidRequestException;
 import exceptions.InvalidAuthTokenException;
 import exceptions.PlayerSpotTakenException;
 import exceptions.InvalidPlayerColorException;
+import exceptions.GameNotFoundException;
 
 import java.util.Map;
 
@@ -63,9 +64,6 @@ public class Server {
             } catch (InvalidRequestException e) {
                 res.status(400); // Bad Request
                 return gson.toJson(new ErrorResponse("Error: bad request"));
-            } catch (DataAccessException e) {
-                res.status(500); // Internal Server Error
-                return gson.toJson(new ErrorResponse("Error: internal server error"));
             }
         });
 
@@ -86,9 +84,6 @@ public class Server {
             } catch (InvalidRequestException e) {
                 res.status(400); // Bad Request
                 return gson.toJson(new ErrorResponse("Error: bad request"));
-            } catch (DataAccessException e) {
-                res.status(500); // Internal Server Error
-                return gson.toJson(new ErrorResponse("Error: internal server error"));
             }
         });
 
@@ -106,9 +101,6 @@ public class Server {
             } catch (InvalidAuthTokenException e) {
                 res.status(401); // Unauthorized
                 return gson.toJson(new ErrorResponse("Error: unauthorized"));
-            } catch (DataAccessException e) {
-                res.status(500); // Internal Server Error
-                return gson.toJson(new ErrorResponse("Error: internal server error"));
             }
         });
 
@@ -116,16 +108,34 @@ public class Server {
         Spark.get("/game", (req, res) -> {
             String authToken = req.headers("Authorization");
             try {
-                if (authToken == null || !authService.isValidAuthToken(authToken)) {
+                if (authToken == null) {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
+                if (!authService.isValidAuthToken(authToken)) {
+                    res.status(401); // Unauthorized
+                    return gson.toJson(new ErrorResponse("Error: unauthorized"));
+                }
+
                 var games = gameService.listGames();
+
+                // Convert games to TestListEntry array
+                TestListEntry[] gameEntries = games.values().stream()
+                        .map(game -> new TestListEntry(
+                                game.gameID(),
+                                game.gameName(),
+                                game.whiteUsername(),
+                                game.blackUsername()))
+                        .toArray(TestListEntry[]::new);
+
+                // Create and return the result
+                TestListResult listResult = new TestListResult();
+                listResult.setGames(gameEntries);
                 res.status(200);
-                return gson.toJson(games);
-            } catch (DataAccessException e) {
-                res.status(500); // Internal Server Error
-                return gson.toJson(new ErrorResponse("Error: internal server error"));
+                return gson.toJson(listResult);
+            } catch (InvalidAuthTokenException e) {
+                res.status(401); // Unauthorized
+                return gson.toJson(new ErrorResponse("Error: unauthorized"));
             }
         });
 
@@ -133,7 +143,11 @@ public class Server {
         Spark.post("/game", (req, res) -> {
             String authToken = req.headers("Authorization");
             try {
-                if (authToken == null || !authService.isValidAuthToken(authToken)) {
+                if (authToken == null) {
+                    res.status(401); // Unauthorized
+                    return gson.toJson(new ErrorResponse("Error: unauthorized"));
+                }
+                if (!authService.isValidAuthToken(authToken)) {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
@@ -141,15 +155,14 @@ public class Server {
                 if (body.gameName() == null) {
                     throw new InvalidRequestException("Game name is required.");
                 }
-                GameData game = gameService.createGame(body.gameName(), authService.getAuth(authToken).username());
+                GameData game = gameService.createGame(body.gameName());
+                TestCreateResult createResult = new TestCreateResult();
+                createResult.setGameID(game.gameID());
                 res.status(200);
-                return gson.toJson(Map.of("gameID", game.gameID()));
+                return gson.toJson(createResult);
             } catch (InvalidRequestException e) {
                 res.status(400); // Bad Request
                 return gson.toJson(new ErrorResponse("Error: bad request"));
-            } catch (DataAccessException e) {
-                res.status(500); // Internal Server Error
-                return gson.toJson(new ErrorResponse("Error: internal server error"));
             }
         });
 
@@ -157,7 +170,11 @@ public class Server {
         Spark.put("/game", (req, res) -> {
             String authToken = req.headers("Authorization");
             try {
-                if (authToken == null || !authService.isValidAuthToken(authToken)) {
+                if (authToken == null) {
+                    res.status(401); // Unauthorized
+                    return gson.toJson(new ErrorResponse("Error: unauthorized"));
+                }
+                if (!authService.isValidAuthToken(authToken)) {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
@@ -168,15 +185,18 @@ public class Server {
                 gameService.joinGame(body.gameID(), body.playerColor(), authService.getAuth(authToken).username());
                 res.status(200);
                 return gson.toJson(new EmptyResponse());
-            } catch (PlayerSpotTakenException e) { // Updated exception name
+            } catch (PlayerSpotTakenException e) {
                 res.status(403); // Forbidden
                 return gson.toJson(new ErrorResponse("Error: already taken"));
+            } catch (GameNotFoundException e) {
+                res.status(400); // Bad Request
+                return gson.toJson(new ErrorResponse("Error: invalid game ID"));
             } catch (InvalidPlayerColorException | InvalidRequestException e) {
                 res.status(400); // Bad Request
                 return gson.toJson(new ErrorResponse("Error: bad request"));
-            } catch (DataAccessException | InvalidAuthTokenException e) {
-                res.status(500); // Internal Server Error
-                return gson.toJson(new ErrorResponse("Error: internal server error"));
+            } catch (InvalidAuthTokenException e) {
+                res.status(401); // Unauthorized
+                return gson.toJson(new ErrorResponse("Error: unauthorized"));
             }
         });
 
@@ -188,6 +208,8 @@ public class Server {
         Spark.stop();
     }
 }
+
+// Supporting Classes
 
 class EmptyResponse {
     // Empty response class to use when no body is required in the response
@@ -223,5 +245,47 @@ class JoinGameRequest {
 
     public String playerColor() {
         return playerColor;
+    }
+}
+
+// New Classes for Test Responses
+
+class TestCreateResult {
+    private int gameID;
+
+    public int getGameID() {
+        return gameID;
+    }
+
+    public void setGameID(int gameID) {
+        this.gameID = gameID;
+    }
+}
+
+class TestListEntry {
+    private int gameID;
+    private String gameName;
+    private String whiteUsername;
+    private String blackUsername;
+
+    public TestListEntry(int gameID, String gameName, String whiteUsername, String blackUsername) {
+        this.gameID = gameID;
+        this.gameName = gameName;
+        this.whiteUsername = whiteUsername;
+        this.blackUsername = blackUsername;
+    }
+
+    // Getters and setters if needed
+}
+
+class TestListResult {
+    private TestListEntry[] games;
+
+    public TestListEntry[] getGames() {
+        return games;
+    }
+
+    public void setGames(TestListEntry[] games) {
+        this.games = games;
     }
 }

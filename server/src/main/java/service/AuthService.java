@@ -36,10 +36,8 @@ public class AuthService {
 
   // Verifies if the auth token is valid.
   public boolean isValidAuthToken(String authToken) throws DataAccessException {
-    // Retrieve the auth data for the token.
-    AuthData authData = authDAO.getAuth(authToken);
     // Return true if the auth token exists, false otherwise.
-    return authData != null;
+    return authDAO.getAuth(authToken) != null;
   }
 
   // Retrieves the AuthData for a given auth token.

@@ -2,12 +2,11 @@ package passoff.model;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Locale;
 import java.util.Scanner;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import passoff.server.StandardAPITests;
+import chess.ChessGame;
 
 public class TestServerFacade {
   private String host;
@@ -24,9 +23,10 @@ public class TestServerFacade {
     return statusCode;
   }
 
-  public void clear() {
+  public TestResult clear() {
     // Send a DELETE request to /db endpoint
-    sendRequest("DELETE", "/db", null, null);
+    String jsonResponse = sendRequest("DELETE", "/db", null, null);
+    return parseResult(jsonResponse, TestResult.class);
   }
 
   public String file(String path) {

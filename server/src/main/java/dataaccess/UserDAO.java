@@ -17,10 +17,8 @@ public class UserDAO {
   }
 
   // Retrieves a user by their username.
-  public UserData getUser(String username) throws DataAccessException {
-    if (!users.containsKey(username)) {
-      throw new DataAccessException("User not found: " + username);
-    }
+  public UserData getUser(String username) {
+    // Return the user if found, or null if not found.
     return users.get(username);
   }
 

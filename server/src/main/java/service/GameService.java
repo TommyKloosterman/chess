@@ -2,7 +2,6 @@ package service;
 
 import java.util.Map;
 import dataaccess.GameDAO;
-import dataaccess.DataAccessException;
 import model.GameData;
 import exceptions.GameNotFoundException;
 import exceptions.InvalidPlayerColorException;
@@ -10,6 +9,7 @@ import exceptions.PlayerSpotTakenException;
 
 public class GameService {
   private final GameDAO gameDAO;
+  private int nextGameID = 1;
 
   // Constructor that takes the GameDAO as a dependency.
   public GameService(GameDAO gameDAO) {
@@ -17,11 +17,9 @@ public class GameService {
   }
 
   // Creates a new game.
-  public GameData createGame(String gameName, String whiteUsername) throws DataAccessException {
-    // Generate a unique gameID (this can be more sophisticated).
-    int gameID = gameDAO.listGames().size() + 1;
-    // Create a new game with the given name and white player.
-    GameData game = new GameData(gameID, whiteUsername, null, gameName, null);
+  public GameData createGame(String gameName) {
+    int gameID = nextGameID++;
+    GameData game = new GameData(gameID, null, null, gameName, null);
     gameDAO.insertGame(game);
     return game;
   }
@@ -32,11 +30,17 @@ public class GameService {
   }
 
   // Allows a player to join a game as either the white or black player.
-  public void joinGame(int gameID, String playerColor, String username) throws DataAccessException, GameNotFoundException, InvalidPlayerColorException, PlayerSpotTakenException {
+  public void joinGame(int gameID, String playerColor, String username)
+          throws GameNotFoundException, InvalidPlayerColorException, PlayerSpotTakenException {
     // Retrieve the game by its gameID.
     GameData game = gameDAO.getGame(gameID);
     if (game == null) {
       throw new GameNotFoundException("Game with ID " + gameID + " not found.");
+    }
+
+    // Check if the player is already in the game.
+    if (username.equals(game.whiteUsername()) || username.equals(game.blackUsername())) {
+      throw new PlayerSpotTakenException("Player already in game.");
     }
 
     // Check if the requested color is available and assign the player.
@@ -44,7 +48,7 @@ public class GameService {
       if (game.whiteUsername() == null) {
         // Assign the user as the white player.
         game = new GameData(game.gameID(), username, game.blackUsername(), game.gameName(), game.game());
-        gameDAO.insertGame(game);  // Update the game in the DAO
+        gameDAO.updateGame(game); // Update the game in the DAO
       } else {
         throw new PlayerSpotTakenException("White player spot already taken.");
       }
@@ -52,7 +56,7 @@ public class GameService {
       if (game.blackUsername() == null) {
         // Assign the user as the black player.
         game = new GameData(game.gameID(), game.whiteUsername(), username, game.gameName(), game.game());
-        gameDAO.insertGame(game);  // Update the game in the DAO
+        gameDAO.updateGame(game); // Update the game in the DAO
       } else {
         throw new PlayerSpotTakenException("Black player spot already taken.");
       }
@@ -64,5 +68,6 @@ public class GameService {
   // Clears all game data.
   public void clear() {
     gameDAO.clear();
+    nextGameID = 1;
   }
 }

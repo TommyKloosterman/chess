@@ -51,5 +51,6 @@ public class UserService {
   // Clears all user data.
   public void clear() {
     userDAO.clear();
+    authService.clear();
   }
 }

@@ -9,19 +9,18 @@ public class GameDAO {
   private final Map<Integer, GameData> games = new HashMap<>();
 
   // Inserts a new game into the database.
-  public void insertGame(GameData game) throws DataAccessException {
-    if (games.containsKey(game.gameID())) {
-      throw new DataAccessException("Game already exists: " + game.gameID());
-    }
+  public void insertGame(GameData game) {
+    games.put(game.gameID(), game);
+  }
+
+  // Updates an existing game.
+  public void updateGame(GameData game) {
     games.put(game.gameID(), game);
   }
 
   // Retrieves a game by its gameID.
-  public GameData getGame(int gameID) throws DataAccessException {
-    if (!games.containsKey(gameID)) {
-      throw new DataAccessException("Game not found: " + gameID);
-    }
-    return games.get(gameID);
+  public GameData getGame(int gameID) {
+    return games.get(gameID); // Returns null if not found
   }
 
   // Retrieves all games.
