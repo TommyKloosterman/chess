@@ -3,73 +3,98 @@ package service;
 import dataaccess.UserDAO;
 import dataaccess.AuthDAO;
 import dataaccess.DataAccessException;
-import model.UserData;
 import model.AuthData;
+import model.UserData;
+import exceptions.InvalidCredentialsException;
+import exceptions.InvalidRequestException;
+import exceptions.InvalidAuthTokenException;
+import exceptions.UserAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class UserServiceTest {
+class UserServiceTest {
 
   private UserDAO userDAO;
+  private AuthService authService;
   private AuthDAO authDAO;
   private UserService userService;
-  private AuthService authService;
 
   @BeforeEach
-  public void setUp() {
-    userDAO = new UserDAO();
+  void setUp() {
+    userDAO = new UserDAO();  // Create actual instances, no mocking
     authDAO = new AuthDAO();
-    authService = new AuthService(authDAO);
+    authService = new AuthService(authDAO);  // Pass actual DAO into service
     userService = new UserService(userDAO, authService);
   }
 
   @Test
-  public void testRegisterSuccess() throws DataAccessException {
-    UserData user = new UserData("john", "password123", "john@example.com");
-    AuthData authData = userService.register(user);
+  void testRegisterNewUser() throws DataAccessException, UserAlreadyExistsException, InvalidRequestException {
+    UserData newUser = new UserData("username", "password", "email@example.com");
 
-    assertNotNull(authData.authToken());
-    assertEquals("john", authData.username());
+    // Test that the user can be registered
+    AuthData authData = userService.register(newUser);
+    assertNotNull(authData);
+    assertEquals("username", authData.username());
+
+    // Ensure user is registered
+    UserData retrievedUser = userDAO.getUser("username");
+    assertEquals(newUser.username(), retrievedUser.username());
   }
 
   @Test
-  public void testRegisterUserAlreadyExists() {
-    UserData user = new UserData("john", "password123", "john@example.com");
+  void testRegisterExistingUser() throws DataAccessException, InvalidRequestException, UserAlreadyExistsException {
+    UserData newUser = new UserData("username", "password", "email@example.com");
 
-    assertThrows(DataAccessException.class, () -> {
-      userService.register(user);
-      userService.register(user);  // Should throw exception on second registration
-    });
+    // Register the user the first time
+    userService.register(newUser);
+
+    // Try to register again and expect exception
+    assertThrows(UserAlreadyExistsException.class, () -> userService.register(newUser));
   }
 
   @Test
-  public void testLoginSuccess() throws DataAccessException {
-    UserData user = new UserData("john", "password123", "john@example.com");
-    userService.register(user);  // Register the user first
+  void testLoginSuccess() throws DataAccessException, UserAlreadyExistsException, InvalidCredentialsException, InvalidRequestException {
+    UserData newUser = new UserData("username", "password", "email@example.com");
+    userService.register(newUser);
 
-    AuthData authData = userService.login(new UserData("john", "password123", null));
-    assertNotNull(authData.authToken());
-    assertEquals("john", authData.username());
+    // Test successful login
+    AuthData authData = userService.login(newUser);
+    assertNotNull(authData);
+    assertEquals("username", authData.username());
   }
 
   @Test
-  public void testLoginInvalidPassword() throws DataAccessException {
-    UserData user = new UserData("john", "password123", "john@example.com");
-    userService.register(user);  // Register the user first
+  void testLoginInvalidPassword() throws DataAccessException, UserAlreadyExistsException, InvalidRequestException {
+    UserData newUser = new UserData("username", "password", "email@example.com");
+    userService.register(newUser);
 
-    assertThrows(DataAccessException.class, () -> {
-      userService.login(new UserData("john", "wrongpassword", null));
-    });
+    // Test login with incorrect password
+    UserData wrongPasswordUser = new UserData("username", "wrongPassword", "email@example.com");
+    assertThrows(InvalidCredentialsException.class, () -> userService.login(wrongPasswordUser));
   }
 
   @Test
-  public void testLogoutSuccess() throws DataAccessException {
-    UserData user = new UserData("john", "password123", "john@example.com");
-    AuthData authData = userService.register(user);
+  void testLoginUserNotFound() throws DataAccessException, InvalidRequestException {
+    // Test login for non-existent user
+    UserData nonExistentUser = new UserData("nonexistent", "password", "email@example.com");
+    assertThrows(InvalidCredentialsException.class, () -> userService.login(nonExistentUser));
+  }
 
-    userService.logout(authData.authToken());
-    assertFalse(authService.isValidAuthToken(authData.authToken()));
+  @Test
+  void testLogout() throws DataAccessException, UserAlreadyExistsException, InvalidRequestException {
+    UserData newUser = new UserData("username", "password", "email@example.com");
+    AuthData authData = userService.register(newUser);
+
+    try {
+      // Test logout
+      userService.logout(authData.authToken());
+
+      // Ensure auth token is invalid after logout
+      assertFalse(authService.isValidAuthToken(authData.authToken()));
+    } catch (InvalidAuthTokenException e) {
+      fail("Unexpected InvalidAuthTokenException thrown: " + e.getMessage());
+    }
   }
 }

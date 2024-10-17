@@ -3,6 +3,7 @@ package service;
 import dataaccess.AuthDAO;
 import dataaccess.DataAccessException;
 import model.AuthData;
+import exceptions.InvalidAuthTokenException;
 
 import java.util.UUID;
 
@@ -24,23 +25,30 @@ public class AuthService {
   }
 
   // Invalidates an auth token (logout operation).
-  public void invalidateAuthToken(String authToken) throws DataAccessException {
+  public void invalidateAuthToken(String authToken) throws DataAccessException, InvalidAuthTokenException {
+    // Check if the auth token exists.
+    AuthData authData = authDAO.getAuth(authToken);
+    if (authData == null) {
+      throw new InvalidAuthTokenException("Invalid auth token.");
+    }
     authDAO.deleteAuth(authToken);
   }
 
   // Verifies if the auth token is valid.
   public boolean isValidAuthToken(String authToken) throws DataAccessException {
-    try {
-      authDAO.getAuth(authToken);
-      return true;
-    } catch (DataAccessException e) {
-      return false;
-    }
+    // Retrieve the auth data for the token.
+    AuthData authData = authDAO.getAuth(authToken);
+    // Return true if the auth token exists, false otherwise.
+    return authData != null;
   }
 
   // Retrieves the AuthData for a given auth token.
-  public AuthData getAuth(String authToken) throws DataAccessException {
-    return authDAO.getAuth(authToken);
+  public AuthData getAuth(String authToken) throws DataAccessException, InvalidAuthTokenException {
+    AuthData authData = authDAO.getAuth(authToken);
+    if (authData == null) {
+      throw new InvalidAuthTokenException("Auth token not found.");
+    }
+    return authData;
   }
 
   // Clears all authentication data.

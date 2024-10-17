@@ -4,6 +4,9 @@ import java.util.Map;
 import dataaccess.GameDAO;
 import dataaccess.DataAccessException;
 import model.GameData;
+import exceptions.GameNotFoundException;
+import exceptions.InvalidPlayerColorException;
+import exceptions.PlayerSpotTakenException;
 
 public class GameService {
   private final GameDAO gameDAO;
@@ -29,9 +32,12 @@ public class GameService {
   }
 
   // Allows a player to join a game as either the white or black player.
-  public void joinGame(int gameID, String playerColor, String username) throws DataAccessException {
+  public void joinGame(int gameID, String playerColor, String username) throws DataAccessException, GameNotFoundException, InvalidPlayerColorException, PlayerSpotTakenException {
     // Retrieve the game by its gameID.
     GameData game = gameDAO.getGame(gameID);
+    if (game == null) {
+      throw new GameNotFoundException("Game with ID " + gameID + " not found.");
+    }
 
     // Check if the requested color is available and assign the player.
     if (playerColor.equalsIgnoreCase("WHITE")) {
@@ -40,7 +46,7 @@ public class GameService {
         game = new GameData(game.gameID(), username, game.blackUsername(), game.gameName(), game.game());
         gameDAO.insertGame(game);  // Update the game in the DAO
       } else {
-        throw new DataAccessException("White player spot already taken.");
+        throw new PlayerSpotTakenException("White player spot already taken.");
       }
     } else if (playerColor.equalsIgnoreCase("BLACK")) {
       if (game.blackUsername() == null) {
@@ -48,10 +54,10 @@ public class GameService {
         game = new GameData(game.gameID(), game.whiteUsername(), username, game.gameName(), game.game());
         gameDAO.insertGame(game);  // Update the game in the DAO
       } else {
-        throw new DataAccessException("Black player spot already taken.");
+        throw new PlayerSpotTakenException("Black player spot already taken.");
       }
     } else {
-      throw new DataAccessException("Invalid player color.");
+      throw new InvalidPlayerColorException("Invalid player color: " + playerColor);
     }
   }
 

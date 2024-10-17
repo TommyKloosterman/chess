@@ -5,32 +5,38 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AuthDAO {
-  // Stores authentication tokens with the authToken as the key.
-  private final Map<String, AuthData> authTokens = new HashMap<>();
+  private final Map<String, AuthData> authTokenMap = new HashMap<>();
 
-  // Inserts a new auth token into the database.
-  public void insertAuth(AuthData auth) throws DataAccessException {
-    authTokens.put(auth.authToken(), auth);
+  // Inserts an auth token into the map
+  public void insertAuth(AuthData authData) {
+    authTokenMap.put(authData.authToken(), authData);
   }
 
-  // Retrieves an auth token by its value.
+  // Retrieves an auth token
   public AuthData getAuth(String authToken) throws DataAccessException {
-    if (!authTokens.containsKey(authToken)) {
-      throw new DataAccessException("Auth token not found: " + authToken);
+    if (authTokenMap.containsKey(authToken)) {
+      return authTokenMap.get(authToken);
+    } else {
+      throw new DataAccessException("Auth token not found.");
     }
-    return authTokens.get(authToken);
   }
 
-  // Deletes an auth token by its value.
+  // Deletes an auth token
   public void deleteAuth(String authToken) throws DataAccessException {
-    if (!authTokens.containsKey(authToken)) {
-      throw new DataAccessException("Auth token not found: " + authToken);
+    if (authTokenMap.containsKey(authToken)) {
+      authTokenMap.remove(authToken);
+    } else {
+      throw new DataAccessException("Auth token not found.");
     }
-    authTokens.remove(authToken);
   }
 
-  // Clears all auth tokens from the database (used during testing).
+  // Clears all auth tokens
   public void clear() {
-    authTokens.clear();
+    authTokenMap.clear();
+  }
+
+  // NEW: Returns all auth tokens
+  public Map<String, AuthData> listAuthTokens() {
+    return new HashMap<>(authTokenMap);  // Return a copy of the auth tokens map
   }
 }
