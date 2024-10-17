@@ -112,10 +112,8 @@ public class Server {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
-                if (!authService.isValidAuthToken(authToken)) {
-                    res.status(401); // Unauthorized
-                    return gson.toJson(new ErrorResponse("Error: unauthorized"));
-                }
+                // Use getAuth to validate token and get user info
+                AuthData authData = authService.getAuth(authToken);
 
                 var games = gameService.listGames();
 
@@ -147,12 +145,11 @@ public class Server {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
-                if (!authService.isValidAuthToken(authToken)) {
-                    res.status(401); // Unauthorized
-                    return gson.toJson(new ErrorResponse("Error: unauthorized"));
-                }
+                // Use getAuth to validate token and get user info
+                AuthData authData = authService.getAuth(authToken);
+
                 var body = gson.fromJson(req.body(), GameRequest.class);
-                if (body.gameName() == null) {
+                if (body == null || body.gameName() == null) {
                     throw new InvalidRequestException("Game name is required.");
                 }
                 GameData game = gameService.createGame(body.gameName());
@@ -163,6 +160,9 @@ public class Server {
             } catch (InvalidRequestException e) {
                 res.status(400); // Bad Request
                 return gson.toJson(new ErrorResponse("Error: bad request"));
+            } catch (InvalidAuthTokenException e) {
+                res.status(401); // Unauthorized
+                return gson.toJson(new ErrorResponse("Error: unauthorized"));
             }
         });
 
@@ -174,15 +174,14 @@ public class Server {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
-                if (!authService.isValidAuthToken(authToken)) {
-                    res.status(401); // Unauthorized
-                    return gson.toJson(new ErrorResponse("Error: unauthorized"));
-                }
+                // Use getAuth to validate token and get user info
+                AuthData authData = authService.getAuth(authToken);
+
                 var body = gson.fromJson(req.body(), JoinGameRequest.class);
-                if (body.playerColor() == null || body.gameID() == 0) {
+                if (body == null || body.playerColor() == null || body.gameID() == 0) {
                     throw new InvalidRequestException("Missing player color or game ID.");
                 }
-                gameService.joinGame(body.gameID(), body.playerColor(), authService.getAuth(authToken).username());
+                gameService.joinGame(body.gameID(), body.playerColor(), authData.username());
                 res.status(200);
                 return gson.toJson(new EmptyResponse());
             } catch (PlayerSpotTakenException e) {
