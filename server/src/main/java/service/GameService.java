@@ -38,11 +38,6 @@ public class GameService {
       throw new GameNotFoundException("Game with ID " + gameID + " not found.");
     }
 
-    // Check if the player is already in the game.
-    if (username.equals(game.whiteUsername()) || username.equals(game.blackUsername())) {
-      throw new PlayerSpotTakenException("Player already in game.");
-    }
-
     // Check if the requested color is available and assign the player.
     if (playerColor.equalsIgnoreCase("WHITE")) {
       if (game.whiteUsername() == null) {
