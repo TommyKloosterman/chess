@@ -11,7 +11,6 @@ import com.google.gson.Gson;
 import model.UserData;
 import model.AuthData;
 import model.GameData;
-import dataaccess.DataAccessException;
 import exceptions.UserAlreadyExistsException;
 import exceptions.InvalidCredentialsException;
 import exceptions.InvalidRequestException;
@@ -19,7 +18,7 @@ import exceptions.InvalidAuthTokenException;
 import exceptions.PlayerSpotTakenException;
 import exceptions.InvalidPlayerColorException;
 import exceptions.GameNotFoundException;
-
+import java.util.Objects;
 import java.util.Map;
 
 public class Server {
@@ -42,7 +41,7 @@ public class Server {
         Spark.delete("/db", (req, res) -> {
             userService.clear();
             authService.clear();
-            gameService.clear(); // Ensure nextGameID is reset
+            gameService.clear();
             res.status(200);
             return gson.toJson(new EmptyResponse());
         });
@@ -129,6 +128,13 @@ public class Server {
                 // Create and return the result
                 TestListResult listResult = new TestListResult();
                 listResult.setGames(gameEntries);
+
+                // Optional: Add logging for debugging
+                System.out.println("Returning Game List:");
+                for (TestListEntry entry : gameEntries) {
+                    System.out.println(entry);
+                }
+
                 res.status(200);
                 return gson.toJson(listResult);
             } catch (InvalidAuthTokenException e) {
@@ -247,19 +253,7 @@ class JoinGameRequest {
     }
 }
 
-// New Classes for Test Responses
-
-class TestCreateResult {
-    private int gameID;
-
-    public int getGameID() {
-        return gameID;
-    }
-
-    public void setGameID(int gameID) {
-        this.gameID = gameID;
-    }
-}
+// Updated TestListEntry Class
 
 class TestListEntry {
     private int gameID;
@@ -274,7 +268,77 @@ class TestListEntry {
         this.blackUsername = blackUsername;
     }
 
-    // Getters and setters if needed
+    // Getters
+    public int getGameID() {
+        return gameID;
+    }
+
+    public String getGameName() {
+        return gameName;
+    }
+
+    public String getWhiteUsername() {
+        return whiteUsername;
+    }
+
+    public String getBlackUsername() {
+        return blackUsername;
+    }
+
+    // Setters if needed
+    public void setGameID(int gameID) {
+        this.gameID = gameID;
+    }
+
+    public void setGameName(String gameName) {
+        this.gameName = gameName;
+    }
+
+    public void setWhiteUsername(String whiteUsername) {
+        this.whiteUsername = whiteUsername;
+    }
+
+    public void setBlackUsername(String blackUsername) {
+        this.blackUsername = blackUsername;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof TestListEntry)) return false;
+        TestListEntry other = (TestListEntry) obj;
+        return gameID == other.gameID &&
+                Objects.equals(gameName, other.gameName) &&
+                Objects.equals(whiteUsername, other.whiteUsername) &&
+                Objects.equals(blackUsername, other.blackUsername);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(gameID, gameName, whiteUsername, blackUsername);
+    }
+
+    @Override
+    public String toString() {
+        return "TestListEntry{" +
+                "gameID=" + gameID +
+                ", gameName='" + gameName + '\'' +
+                ", whiteUsername='" + whiteUsername + '\'' +
+                ", blackUsername='" + blackUsername + '\'' +
+                '}';
+    }
+}
+
+class TestCreateResult {
+    private int gameID;
+
+    public int getGameID() {
+        return gameID;
+    }
+
+    public void setGameID(int gameID) {
+        this.gameID = gameID;
+    }
 }
 
 class TestListResult {
