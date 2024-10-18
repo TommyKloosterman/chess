@@ -65,9 +65,9 @@ public class GameService {
     }
   }
 
-  // Clears all game data.
+  // Clears all game data
   public void clear() {
     gameDAO.clear();
-    nextGameID = 1; // Reset nextGameID to ensure game IDs start from 1
+    nextGameID = 1; // Reset nextGameID to 1
   }
 }

@@ -41,8 +41,8 @@ public class Server {
         // Clear Application Data
         Spark.delete("/db", (req, res) -> {
             userService.clear();
-            gameService.clear();
             authService.clear();
+            gameService.clear(); // Ensure nextGameID is reset
             res.status(200);
             return gson.toJson(new EmptyResponse());
         });
