@@ -42,9 +42,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <mainClass>
-                                        Main
-                                    </mainClass>
+                                    <mainClass>Main</mainClass>
                                 </manifest>
                             </archive>
                             <descriptors>
@@ -58,11 +56,14 @@
     </build>
 
     <dependencies>
+        <!-- Shared Dependency -->
         <dependency>
             <groupId>edu.byu.cs240</groupId>
             <artifactId>shared</artifactId>
             <version>1.0.0</version>
         </dependency>
+
+        <!-- Test Jar for Shared Dependency -->
         <dependency>
             <groupId>edu.byu.cs240</groupId>
             <artifactId>shared</artifactId>
@@ -70,32 +71,46 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+
+        <!-- MySQL Connector -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.30</version>
+            <scope>compile</scope>
         </dependency>
+
+        <!-- SLF4J Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.36</version>
         </dependency>
+
+        <!-- Spark Java Core -->
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
             <version>2.9.3</version>
         </dependency>
+
+        <!-- BCrypt Library for Password Hashing -->
         <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
+            <scope>compile</scope>
         </dependency>
+
+        <!-- Tyrus Standalone Client for WebSocket Testing -->
         <dependency>
             <groupId>org.glassfish.tyrus.bundles</groupId>
             <artifactId>tyrus-standalone-client</artifactId>
             <version>1.15</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Passoff Dependencies -->
         <dependency>
             <groupId>edu.byu.cs240</groupId>
             <artifactId>passoff-dependencies</artifactId>
@@ -104,6 +119,4 @@
             <systemPath>${pom.basedir}/lib/passoff-dependencies.jar</systemPath>
         </dependency>
     </dependencies>
-
-
 </project>
