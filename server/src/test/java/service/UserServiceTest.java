@@ -9,6 +9,7 @@ import exceptions.InvalidCredentialsException;
 import exceptions.InvalidRequestException;
 import exceptions.InvalidAuthTokenException;
 import exceptions.UserAlreadyExistsException;
+import exceptions.ServiceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +31,7 @@ class UserServiceTest {
   }
 
   @Test
-  void testRegisterNewUser() throws DataAccessException, UserAlreadyExistsException, InvalidRequestException {
+  void testRegisterNewUser() throws DataAccessException, UserAlreadyExistsException, InvalidRequestException, ServiceException {
     UserData newUser = new UserData("username", "password", "email@example.com");
 
     // Test that the user can be registered
@@ -44,7 +45,7 @@ class UserServiceTest {
   }
 
   @Test
-  void testRegisterExistingUser() throws DataAccessException, InvalidRequestException, UserAlreadyExistsException {
+  void testRegisterExistingUser() throws DataAccessException, InvalidRequestException, UserAlreadyExistsException, ServiceException {
     UserData newUser = new UserData("username", "password", "email@example.com");
 
     // Register the user the first time
@@ -55,7 +56,7 @@ class UserServiceTest {
   }
 
   @Test
-  void testLoginSuccess() throws DataAccessException, UserAlreadyExistsException, InvalidCredentialsException, InvalidRequestException {
+  void testLoginSuccess() throws DataAccessException, UserAlreadyExistsException, InvalidCredentialsException, InvalidRequestException, ServiceException {
     UserData newUser = new UserData("username", "password", "email@example.com");
     userService.register(newUser);
 
@@ -66,7 +67,7 @@ class UserServiceTest {
   }
 
   @Test
-  void testLoginInvalidPassword() throws DataAccessException, UserAlreadyExistsException, InvalidRequestException {
+  void testLoginInvalidPassword() throws DataAccessException, UserAlreadyExistsException, InvalidRequestException, ServiceException {
     UserData newUser = new UserData("username", "password", "email@example.com");
     userService.register(newUser);
 
@@ -76,14 +77,14 @@ class UserServiceTest {
   }
 
   @Test
-  void testLoginUserNotFound() throws DataAccessException, InvalidRequestException {
+  void testLoginUserNotFound() throws DataAccessException, InvalidRequestException, ServiceException {
     // Test login for non-existent user
     UserData nonExistentUser = new UserData("nonexistent", "password", "email@example.com");
     assertThrows(InvalidCredentialsException.class, () -> userService.login(nonExistentUser));
   }
 
   @Test
-  void testLogout() throws DataAccessException, UserAlreadyExistsException, InvalidRequestException {
+  void testLogout() throws DataAccessException, UserAlreadyExistsException, InvalidRequestException, ServiceException {
     UserData newUser = new UserData("username", "password", "email@example.com");
     AuthData authData = userService.register(newUser);
 
