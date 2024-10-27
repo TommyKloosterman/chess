@@ -8,6 +8,8 @@ import exceptions.UserAlreadyExistsException;
 import exceptions.InvalidCredentialsException;
 import exceptions.InvalidRequestException;
 import exceptions.InvalidAuthTokenException;
+import exceptions.ServiceException;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class UserService {
   private final UserDAO userDAO;
@@ -20,37 +22,54 @@ public class UserService {
   }
 
   // Registers a new user.
-  public AuthData register(UserData user) throws DataAccessException, UserAlreadyExistsException, InvalidRequestException {
+  public AuthData register(UserData user) throws ServiceException, UserAlreadyExistsException, InvalidRequestException {
     if (user == null || user.username() == null || user.password() == null || user.email() == null) {
       throw new InvalidRequestException("Missing required user fields.");
     }
-    if (userDAO.getUser(user.username()) != null) {
-      throw new UserAlreadyExistsException("User already exists with username: " + user.username());
+    try {
+      if (userDAO.getUser(user.username()) != null) {
+        throw new UserAlreadyExistsException("User already exists with username: " + user.username());
+      }
+      userDAO.insertUser(user);
+      return authService.generateAuthToken(user.username());
+    } catch (DataAccessException e) {
+      throw new ServiceException("Error registering user", e);
     }
-    userDAO.insertUser(user);
-    return authService.generateAuthToken(user.username());
   }
 
   // Logs in an existing user.
-  public AuthData login(UserData user) throws DataAccessException, InvalidCredentialsException, InvalidRequestException {
+  public AuthData login(UserData user) throws ServiceException, InvalidCredentialsException, InvalidRequestException {
     if (user == null || user.username() == null || user.password() == null) {
       throw new InvalidRequestException("Missing username or password.");
     }
-    UserData storedUser = userDAO.getUser(user.username());
-    if (storedUser == null || !storedUser.password().equals(user.password())) {
-      throw new InvalidCredentialsException("Invalid credentials.");
+    try {
+      UserData storedUser = userDAO.getUser(user.username());
+      if (storedUser == null || !BCrypt.checkpw(user.password(), storedUser.password())) {
+        throw new InvalidCredentialsException("Invalid credentials.");
+      }
+      return authService.generateAuthToken(storedUser.username());
+    } catch (DataAccessException e) {
+      throw new ServiceException("Error logging in user", e);
     }
-    return authService.generateAuthToken(storedUser.username());
   }
 
   // Logs out the user by removing their auth token.
-  public void logout(String authToken) throws DataAccessException, InvalidAuthTokenException {
-    authService.invalidateAuthToken(authToken);
+  public void logout(String authToken) throws ServiceException, InvalidAuthTokenException {
+    try {
+      authService.invalidateAuthToken(authToken);
+    } catch (DataAccessException e) {
+      throw new ServiceException("Error logging out user", e);
+    }
   }
 
   // Clears all user data.
   public void clear() {
-    userDAO.clear();
-    authService.clear();
+    try {
+      userDAO.clear();
+      authService.clear();
+    } catch (DataAccessException e) {
+      // Handle exception, perhaps log it
+      System.err.println("Error clearing user data: " + e.getMessage());
+    }
   }
 }
