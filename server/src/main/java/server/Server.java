@@ -19,24 +19,45 @@ import exceptions.PlayerSpotTakenException;
 import exceptions.InvalidPlayerColorException;
 import exceptions.GameNotFoundException;
 import java.util.Objects;
-import java.util.Map;
 
 public class Server {
     private static final Gson gson = new Gson();
+    private static boolean isInitialized = false;
+
     private UserService userService;
     private GameService gameService;
     private AuthService authService;
 
     public int run(int desiredPort) {
-        Spark.port(desiredPort);
-        Spark.staticFiles.location("web");
+        if (!isInitialized) {
+            isInitialized = true;
 
-        // Initialize DAOs and Services
+            // Set the port before mapping any routes
+            Spark.port(desiredPort);
+            Spark.staticFiles.location("web");
+
+            // Initialize services, DAOs, etc.
+            initializeServices();
+
+            // Map your routes
+            mapRoutes();
+
+            // Start the server
+            Spark.init();
+            Spark.awaitInitialization();
+        }
+
+        return Spark.port();
+    }
+
+    private void initializeServices() {
         AuthDAO sharedAuthDAO = new AuthDAO();
         authService = new AuthService(sharedAuthDAO);
         userService = new UserService(new UserDAO(), authService);
         gameService = new GameService(new GameDAO());
+    }
 
+    private void mapRoutes() {
         // Clear Application Data
         Spark.delete("/db", (req, res) -> {
             userService.clear();
@@ -111,12 +132,10 @@ public class Server {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
-                // Use getAuth to validate token and get user info
                 AuthData authData = authService.getAuth(authToken);
 
                 var games = gameService.listGames();
 
-                // Convert games to TestListEntry array
                 TestListEntry[] gameEntries = games.values().stream()
                         .map(game -> new TestListEntry(
                                 game.gameID(),
@@ -125,15 +144,8 @@ public class Server {
                                 game.blackUsername()))
                         .toArray(TestListEntry[]::new);
 
-                // Create and return the result
                 TestListResult listResult = new TestListResult();
                 listResult.setGames(gameEntries);
-
-                // Optional: Add logging for debugging
-                System.out.println("Returning Game List:");
-                for (TestListEntry entry : gameEntries) {
-                    System.out.println(entry);
-                }
 
                 res.status(200);
                 return gson.toJson(listResult);
@@ -151,7 +163,6 @@ public class Server {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
-                // Use getAuth to validate token and get user info
                 AuthData authData = authService.getAuth(authToken);
 
                 var body = gson.fromJson(req.body(), GameRequest.class);
@@ -180,7 +191,6 @@ public class Server {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
-                // Use getAuth to validate token and get user info
                 AuthData authData = authService.getAuth(authToken);
 
                 var body = gson.fromJson(req.body(), JoinGameRequest.class);
@@ -204,21 +214,18 @@ public class Server {
                 return gson.toJson(new ErrorResponse("Error: unauthorized"));
             }
         });
-
-        Spark.awaitInitialization();
-        return Spark.port();
     }
 
     public void stop() {
         Spark.stop();
+        Spark.awaitStop();
+        isInitialized = false; // Reset the initialization flag
     }
 }
 
 // Supporting Classes
 
-class EmptyResponse {
-    // Empty response class to use when no body is required in the response
-}
+class EmptyResponse {}
 
 class ErrorResponse {
     private final String message;
@@ -253,8 +260,6 @@ class JoinGameRequest {
     }
 }
 
-// Updated TestListEntry Class
-
 class TestListEntry {
     private int gameID;
     private String gameName;
@@ -268,7 +273,6 @@ class TestListEntry {
         this.blackUsername = blackUsername;
     }
 
-    // Getters
     public int getGameID() {
         return gameID;
     }
@@ -283,39 +287,6 @@ class TestListEntry {
 
     public String getBlackUsername() {
         return blackUsername;
-    }
-
-    // Setters if needed
-    public void setGameID(int gameID) {
-        this.gameID = gameID;
-    }
-
-    public void setGameName(String gameName) {
-        this.gameName = gameName;
-    }
-
-    public void setWhiteUsername(String whiteUsername) {
-        this.whiteUsername = whiteUsername;
-    }
-
-    public void setBlackUsername(String blackUsername) {
-        this.blackUsername = blackUsername;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof TestListEntry)) return false;
-        TestListEntry other = (TestListEntry) obj;
-        return gameID == other.gameID &&
-                Objects.equals(gameName, other.gameName) &&
-                Objects.equals(whiteUsername, other.whiteUsername) &&
-                Objects.equals(blackUsername, other.blackUsername);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(gameID, gameName, whiteUsername, blackUsername);
     }
 
     @Override
