@@ -8,6 +8,7 @@ public class DatabaseManager {
     private static final String USER;
     private static final String PASSWORD;
     private static final String CONNECTION_URL;
+    private static final String BASE_CONNECTION_URL;
 
     /*
      * Load the database information from the db.properties file.
@@ -26,6 +27,11 @@ public class DatabaseManager {
 
                 var host = props.getProperty("db.host");
                 var port = Integer.parseInt(props.getProperty("db.port"));
+
+                // Base connection URL without database name
+                BASE_CONNECTION_URL = String.format("jdbc:mysql://%s:%d", host, port);
+
+                // Full connection URL with database name
                 CONNECTION_URL = String.format("jdbc:mysql://%s:%d/%s", host, port, DATABASE_NAME);
             }
         } catch (Exception ex) {
@@ -39,7 +45,7 @@ public class DatabaseManager {
     public static void createDatabase() throws DataAccessException {
         try {
             var statement = "CREATE DATABASE IF NOT EXISTS " + DATABASE_NAME;
-            try (Connection conn = DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD)) {
+            try (Connection conn = DriverManager.getConnection(BASE_CONNECTION_URL, USER, PASSWORD)) {
                 try (PreparedStatement preparedStatement = conn.prepareStatement(statement)) {
                     preparedStatement.executeUpdate();
                 }
@@ -103,6 +109,20 @@ public class DatabaseManager {
             return conn;
         } catch (SQLException e) {
             throw new DataAccessException("Error establishing database connection: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Test connection to the database.
+     * This is a temporary test method to verify the database setup.
+     */
+    public static void testConnection() {
+        try (Connection conn = getConnection()) {
+            System.out.println("Database connection successful!");
+        } catch (DataAccessException e) {
+            System.err.println("Database connection failed: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
         }
     }
 }
