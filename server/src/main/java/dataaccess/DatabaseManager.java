@@ -10,7 +10,7 @@ public class DatabaseManager {
     private static final String CONNECTION_URL;
 
     /*
-     * Load the database information for the db.properties file.
+     * Load the database information from the db.properties file.
      */
     static {
         try {
@@ -26,47 +26,83 @@ public class DatabaseManager {
 
                 var host = props.getProperty("db.host");
                 var port = Integer.parseInt(props.getProperty("db.port"));
-                CONNECTION_URL = String.format("jdbc:mysql://%s:%d", host, port);
+                CONNECTION_URL = String.format("jdbc:mysql://%s:%d/%s", host, port, DATABASE_NAME);
             }
         } catch (Exception ex) {
-            throw new RuntimeException("unable to process db.properties. " + ex.getMessage());
+            throw new RuntimeException("Unable to process db.properties: " + ex.getMessage());
         }
     }
 
     /**
      * Creates the database if it does not already exist.
      */
-    static void createDatabase() throws DataAccessException {
+    public static void createDatabase() throws DataAccessException {
         try {
             var statement = "CREATE DATABASE IF NOT EXISTS " + DATABASE_NAME;
-            var conn = DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD);
-            try (var preparedStatement = conn.prepareStatement(statement)) {
-                preparedStatement.executeUpdate();
+            try (Connection conn = DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD)) {
+                try (PreparedStatement preparedStatement = conn.prepareStatement(statement)) {
+                    preparedStatement.executeUpdate();
+                }
             }
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            throw new DataAccessException("Error creating database: " + e.getMessage());
         }
     }
 
     /**
-     * Create a connection to the database and sets the catalog based upon the
-     * properties specified in db.properties. Connections to the database should
-     * be short-lived, and you must close the connection when you are done with it.
-     * The easiest way to do that is with a try-with-resource block.
-     * <br/>
-     * <code>
-     * try (var conn = DbInfo.getConnection(databaseName)) {
-     * // execute SQL statements.
-     * }
-     * </code>
+     * Initializes the database by creating tables if they don't exist.
      */
-    static Connection getConnection() throws DataAccessException {
+    public static void initializeDatabase() throws DataAccessException {
+        createDatabase();  // Ensure the database exists
+
+        try (Connection conn = getConnection()) {
+            // Create Users table
+            String createUsersTable = """
+                CREATE TABLE IF NOT EXISTS Users (
+                    user_id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) UNIQUE NOT NULL,
+                    password_hash VARCHAR(60) NOT NULL,
+                    email VARCHAR(100) UNIQUE NOT NULL
+                );
+            """;
+            try (PreparedStatement stmt = conn.prepareStatement(createUsersTable)) {
+                stmt.executeUpdate();
+            }
+
+            // Create Games table
+            String createGamesTable = """
+                CREATE TABLE IF NOT EXISTS Games (
+                    game_id INT AUTO_INCREMENT PRIMARY KEY,
+                    game_name VARCHAR(100) NOT NULL,
+                    state JSON,  -- Store serialized game state as JSON
+                    white_player_id INT,
+                    black_player_id INT,
+                    FOREIGN KEY (white_player_id) REFERENCES Users(user_id),
+                    FOREIGN KEY (black_player_id) REFERENCES Users(user_id)
+                );
+            """;
+            try (PreparedStatement stmt = conn.prepareStatement(createGamesTable)) {
+                stmt.executeUpdate();
+            }
+
+            // Optionally, add more tables here (like Moves) as needed for your project
+        } catch (SQLException e) {
+            throw new DataAccessException("Error initializing database tables: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Create a connection to the database using the properties in db.properties.
+     * Connections should be short-lived; always close the connection when done.
+     * Use a try-with-resource block to ensure automatic resource management.
+     */
+    public static Connection getConnection() throws DataAccessException {
         try {
             var conn = DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD);
             conn.setCatalog(DATABASE_NAME);
             return conn;
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            throw new DataAccessException("Error establishing database connection: " + e.getMessage());
         }
     }
 }
