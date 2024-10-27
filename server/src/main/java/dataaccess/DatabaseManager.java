@@ -1,6 +1,8 @@
 package dataaccess;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Properties;
 
 public class DatabaseManager {
@@ -44,11 +46,10 @@ public class DatabaseManager {
      */
     public static void createDatabase() throws DataAccessException {
         try {
-            var statement = "CREATE DATABASE IF NOT EXISTS " + DATABASE_NAME;
-            try (Connection conn = DriverManager.getConnection(BASE_CONNECTION_URL, USER, PASSWORD)) {
-                try (PreparedStatement preparedStatement = conn.prepareStatement(statement)) {
-                    preparedStatement.executeUpdate();
-                }
+            String statement = "CREATE DATABASE IF NOT EXISTS " + DATABASE_NAME;
+            try (Connection conn = DriverManager.getConnection(BASE_CONNECTION_URL, USER, PASSWORD);
+                 var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
             }
         } catch (SQLException e) {
             throw new DataAccessException("Error creating database: " + e.getMessage());
@@ -71,7 +72,7 @@ public class DatabaseManager {
                     email VARCHAR(100) UNIQUE NOT NULL
                 );
             """;
-            try (PreparedStatement stmt = conn.prepareStatement(createUsersTable)) {
+            try (var stmt = conn.prepareStatement(createUsersTable)) {
                 stmt.executeUpdate();
             }
 
@@ -80,49 +81,31 @@ public class DatabaseManager {
                 CREATE TABLE IF NOT EXISTS Games (
                     game_id INT AUTO_INCREMENT PRIMARY KEY,
                     game_name VARCHAR(100) NOT NULL,
-                    state JSON,  -- Store serialized game state as JSON
+                    state JSON,
                     white_player_id INT,
                     black_player_id INT,
                     FOREIGN KEY (white_player_id) REFERENCES Users(user_id),
                     FOREIGN KEY (black_player_id) REFERENCES Users(user_id)
                 );
             """;
-            try (PreparedStatement stmt = conn.prepareStatement(createGamesTable)) {
+            try (var stmt = conn.prepareStatement(createGamesTable)) {
                 stmt.executeUpdate();
             }
-
-            // Optionally, add more tables here (like Moves) as needed for your project
         } catch (SQLException e) {
             throw new DataAccessException("Error initializing database tables: " + e.getMessage());
         }
     }
 
     /**
-     * Create a connection to the database using the properties in db.properties.
+     * Provides a connection to the database using the properties in db.properties.
      * Connections should be short-lived; always close the connection when done.
-     * Use a try-with-resource block to ensure automatic resource management.
+     * Use a try-with-resources block to ensure automatic resource management.
      */
     public static Connection getConnection() throws DataAccessException {
         try {
-            var conn = DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD);
-            conn.setCatalog(DATABASE_NAME);
-            return conn;
+            return DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD);
         } catch (SQLException e) {
             throw new DataAccessException("Error establishing database connection: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Test connection to the database.
-     * This is a temporary test method to verify the database setup.
-     */
-    public static void testConnection() {
-        try (Connection conn = getConnection()) {
-            System.out.println("Database connection successful!");
-        } catch (DataAccessException e) {
-            System.err.println("Database connection failed: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Unexpected error: " + e.getMessage());
         }
     }
 }

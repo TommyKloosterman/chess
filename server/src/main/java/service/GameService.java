@@ -2,10 +2,10 @@ package service;
 
 import java.util.Map;
 import dataaccess.GameDAO;
-import dataaccess.DataAccessException;
 import model.GameData;
 import exceptions.GameNotFoundException;
 import exceptions.InvalidPlayerColorException;
+import dataaccess.DataAccessException;
 import exceptions.PlayerSpotTakenException;
 import exceptions.ServiceException;
 

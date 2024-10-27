@@ -1,14 +1,10 @@
 package service;
 
 import dataaccess.UserDAO;
-import dataaccess.DataAccessException;
-import model.UserData;
+import dataaccess.DataAccessException;  // Ensure this import is here
+import exceptions.*;
 import model.AuthData;
-import exceptions.UserAlreadyExistsException;
-import exceptions.InvalidCredentialsException;
-import exceptions.InvalidRequestException;
-import exceptions.InvalidAuthTokenException;
-import exceptions.ServiceException;
+import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class UserService {
@@ -30,7 +26,11 @@ public class UserService {
       if (userDAO.getUser(user.username()) != null) {
         throw new UserAlreadyExistsException("User already exists with username: " + user.username());
       }
-      userDAO.insertUser(user);
+      // Hash the password before storing
+      String hashedPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
+      UserData userWithHashedPassword = new UserData(user.username(), hashedPassword, user.email());
+      userDAO.insertUser(userWithHashedPassword);
+
       return authService.generateAuthToken(user.username());
     } catch (DataAccessException e) {
       throw new ServiceException("Error registering user", e);
@@ -55,21 +55,17 @@ public class UserService {
 
   // Logs out the user by removing their auth token.
   public void logout(String authToken) throws ServiceException, InvalidAuthTokenException {
-    try {
-      authService.invalidateAuthToken(authToken);
-    } catch (DataAccessException e) {
-      throw new ServiceException("Error logging out user", e);
-    }
+    authService.invalidateAuthToken(authToken);
   }
 
   // Clears all user data.
-  public void clear() {
+  public void clear() throws ServiceException {
     try {
-      userDAO.clear();
+      // Clear auth tokens first to avoid foreign key constraints
       authService.clear();
+      userDAO.clear();
     } catch (DataAccessException e) {
-      // Handle exception, perhaps log it
-      System.err.println("Error clearing user data: " + e.getMessage());
+      throw new ServiceException("Error clearing user data", e);
     }
   }
 }

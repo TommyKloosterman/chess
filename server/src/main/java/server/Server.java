@@ -60,11 +60,19 @@ public class Server {
     private void mapRoutes() {
         // Clear Application Data
         Spark.delete("/db", (req, res) -> {
-            userService.clear();
-            authService.clear();
-            gameService.clear();
-            res.status(200);
-            return gson.toJson(new EmptyResponse());
+            try {
+                // **Important:** Delete games first to avoid foreign key constraints
+                gameService.clear();
+                userService.clear();
+                authService.clear();
+                res.status(200);
+                return gson.toJson(new EmptyResponse());
+            } catch (Exception e) { // Catching generic Exception for broad error handling
+                System.err.println("Error clearing database: " + e.getMessage());
+                e.printStackTrace();
+                res.status(500); // Internal Server Error
+                return gson.toJson(new ErrorResponse("Error clearing database: " + e.getMessage()));
+            }
         });
 
         // Register User
@@ -152,6 +160,11 @@ public class Server {
             } catch (InvalidAuthTokenException e) {
                 res.status(401); // Unauthorized
                 return gson.toJson(new ErrorResponse("Error: unauthorized"));
+            } catch (Exception e) { // Catching generic Exception for broad error handling
+                System.err.println("Error listing games: " + e.getMessage());
+                e.printStackTrace();
+                res.status(500); // Internal Server Error
+                return gson.toJson(new ErrorResponse("Error listing games: " + e.getMessage()));
             }
         });
 
@@ -180,6 +193,11 @@ public class Server {
             } catch (InvalidAuthTokenException e) {
                 res.status(401); // Unauthorized
                 return gson.toJson(new ErrorResponse("Error: unauthorized"));
+            } catch (Exception e) { // Catching generic Exception for broad error handling
+                System.err.println("Error creating game: " + e.getMessage());
+                e.printStackTrace();
+                res.status(500); // Internal Server Error
+                return gson.toJson(new ErrorResponse("Error creating game: " + e.getMessage()));
             }
         });
 
@@ -212,6 +230,11 @@ public class Server {
             } catch (InvalidAuthTokenException e) {
                 res.status(401); // Unauthorized
                 return gson.toJson(new ErrorResponse("Error: unauthorized"));
+            } catch (Exception e) { // Catching generic Exception for broad error handling
+                System.err.println("Error joining game: " + e.getMessage());
+                e.printStackTrace();
+                res.status(500); // Internal Server Error
+                return gson.toJson(new ErrorResponse("Error joining game: " + e.getMessage()));
             }
         });
     }
@@ -225,7 +248,9 @@ public class Server {
 
 // Supporting Classes
 
-class EmptyResponse {}
+class EmptyResponse {
+    // Empty response class to use when no body is required in the response
+}
 
 class ErrorResponse {
     private final String message;
@@ -287,6 +312,22 @@ class TestListEntry {
 
     public String getBlackUsername() {
         return blackUsername;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof TestListEntry)) return false;
+        TestListEntry other = (TestListEntry) obj;
+        return gameID == other.gameID &&
+                Objects.equals(gameName, other.gameName) &&
+                Objects.equals(whiteUsername, other.whiteUsername) &&
+                Objects.equals(blackUsername, other.blackUsername);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(gameID, gameName, whiteUsername, blackUsername);
     }
 
     @Override
