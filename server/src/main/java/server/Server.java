@@ -7,6 +7,7 @@ import service.AuthService;
 import dataaccess.UserDAO;
 import dataaccess.GameDAO;
 import dataaccess.AuthDAO;
+import dataaccess.DataAccessException;
 import com.google.gson.Gson;
 import model.UserData;
 import model.AuthData;
@@ -28,7 +29,7 @@ public class Server {
     private GameService gameService;
     private AuthService authService;
 
-    public int run(int desiredPort) {
+    public int run(int desiredPort) throws DataAccessException {
         if (!isInitialized) {
             isInitialized = true;
 

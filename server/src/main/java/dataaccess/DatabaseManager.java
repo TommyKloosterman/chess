@@ -52,20 +52,35 @@ public class DatabaseManager {
                 preparedStatement.executeUpdate();
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error creating database: " + e.getMessage());
+            throw new DataAccessException("Error creating database: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Initializes the database by creating tables if they don't exist.
+     * Initializes the database by dropping and creating tables.
      */
     public static void initializeDatabase() throws DataAccessException {
         createDatabase();  // Ensure the database exists
 
         try (Connection conn = getConnection()) {
+            // Drop tables if they exist
+            String dropAuthTokensTable = "DROP TABLE IF EXISTS auth_tokens;";
+            String dropGamesTable = "DROP TABLE IF EXISTS Games;";
+            String dropUsersTable = "DROP TABLE IF EXISTS Users;";
+
+            try (var stmt = conn.prepareStatement(dropAuthTokensTable)) {
+                stmt.executeUpdate();
+            }
+            try (var stmt = conn.prepareStatement(dropGamesTable)) {
+                stmt.executeUpdate();
+            }
+            try (var stmt = conn.prepareStatement(dropUsersTable)) {
+                stmt.executeUpdate();
+            }
+
             // Create Users table
             String createUsersTable = """
-                CREATE TABLE IF NOT EXISTS Users (
+                CREATE TABLE Users (
                     user_id INT AUTO_INCREMENT PRIMARY KEY,
                     username VARCHAR(50) UNIQUE NOT NULL,
                     password_hash VARCHAR(60) NOT NULL,
@@ -78,7 +93,7 @@ public class DatabaseManager {
 
             // Create Games table
             String createGamesTable = """
-                CREATE TABLE IF NOT EXISTS Games (
+                CREATE TABLE Games (
                     game_id INT AUTO_INCREMENT PRIMARY KEY,
                     game_name VARCHAR(100) NOT NULL,
                     state JSON,
@@ -91,8 +106,21 @@ public class DatabaseManager {
             try (var stmt = conn.prepareStatement(createGamesTable)) {
                 stmt.executeUpdate();
             }
+
+            // Create Auth Tokens table
+            String createAuthTokensTable = """
+                CREATE TABLE auth_tokens (
+                    token VARCHAR(100) PRIMARY KEY,
+                    username VARCHAR(50) NOT NULL,
+                    FOREIGN KEY (username) REFERENCES Users(username)
+                );
+            """;
+            try (var stmt = conn.prepareStatement(createAuthTokensTable)) {
+                stmt.executeUpdate();
+            }
+
         } catch (SQLException e) {
-            throw new DataAccessException("Error initializing database tables: " + e.getMessage());
+            throw new DataAccessException("Error initializing database tables: " + e.getMessage(), e);
         }
     }
 
@@ -105,7 +133,7 @@ public class DatabaseManager {
         try {
             return DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD);
         } catch (SQLException e) {
-            throw new DataAccessException("Error establishing database connection: " + e.getMessage());
+            throw new DataAccessException("Error establishing database connection: " + e.getMessage(), e);
         }
     }
 }

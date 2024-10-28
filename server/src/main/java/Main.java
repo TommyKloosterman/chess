@@ -1,5 +1,6 @@
 import chess.*;
 import server.Server;
+import dataaccess.DataAccessException;
 
 public class Main {
     public static void main(String[] args) {
@@ -9,8 +10,12 @@ public class Main {
 
         // Create and run the server (this starts the HTTP server on port 8080)
         Server server = new Server();
-        int port = server.run(8080);
-
-        System.out.println("Server is running on port " + port + "...");
+        try {
+            int port = server.run(8080);
+            System.out.println("Server is running on port " + port + "...");
+        } catch (DataAccessException e) {
+            System.err.println("Failed to start the server due to database error: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
