@@ -7,7 +7,7 @@ import service.AuthService;
 import dataaccess.UserDAO;
 import dataaccess.GameDAO;
 import dataaccess.AuthDAO;
-import dataaccess.DataAccessException;
+import dataaccess.DatabaseManager;
 import com.google.gson.Gson;
 import model.UserData;
 import model.AuthData;
@@ -29,7 +29,7 @@ public class Server {
     private GameService gameService;
     private AuthService authService;
 
-    public int run(int desiredPort) throws DataAccessException {
+    public int run(int desiredPort) {
         if (!isInitialized) {
             isInitialized = true;
 
@@ -37,7 +37,7 @@ public class Server {
             Spark.port(desiredPort);
             Spark.staticFiles.location("web");
 
-            // Initialize services, DAOs, etc.
+            // Remove try-catch around initializeServices() call
             initializeServices();
 
             // Map your routes
@@ -52,6 +52,9 @@ public class Server {
     }
 
     private void initializeServices() {
+        // Initialize the database
+        DatabaseManager.initializeDatabase();
+
         AuthDAO sharedAuthDAO = new AuthDAO();
         authService = new AuthService(sharedAuthDAO);
         userService = new UserService(new UserDAO(), authService);
