@@ -1,10 +1,10 @@
 package service;
 
 import dataaccess.AuthDAO;
-import dataaccess.DataAccessException;
 import model.AuthData;
 import exceptions.InvalidAuthTokenException;
-import exceptions.AuthTokenNotFoundException;
+import exceptions.ServiceException;
+import dataaccess.DataAccessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +22,7 @@ class AuthServiceTest {
   }
 
   @Test
-  void testGenerateAuthToken() throws DataAccessException {
+  void testGenerateAuthToken() throws ServiceException, DataAccessException {
     // Generate auth token for a user
     AuthData authData = authService.generateAuthToken("username");
     assertNotNull(authData);
@@ -34,7 +34,7 @@ class AuthServiceTest {
   }
 
   @Test
-  void testInvalidateAuthToken() throws DataAccessException, InvalidAuthTokenException {
+  void testInvalidateAuthToken() throws ServiceException, InvalidAuthTokenException {
     // Generate and then invalidate an auth token
     AuthData authData = authService.generateAuthToken("username");
 
@@ -49,7 +49,7 @@ class AuthServiceTest {
   }
 
   @Test
-  void testIsValidAuthToken() throws DataAccessException {
+  void testIsValidAuthToken() throws ServiceException {
     // Generate auth token
     AuthData authData = authService.generateAuthToken("username");
 
@@ -61,7 +61,7 @@ class AuthServiceTest {
   }
 
   @Test
-  void testGetAuth() throws DataAccessException, AuthTokenNotFoundException, InvalidAuthTokenException {
+  void testGetAuth() throws ServiceException, InvalidAuthTokenException {
     // Generate auth token and retrieve it
     AuthData authData = authService.generateAuthToken("username");
 
@@ -76,13 +76,13 @@ class AuthServiceTest {
     try {
       authService.invalidateAuthToken("invalidToken");
       fail("Expected InvalidAuthTokenException was not thrown");
-    } catch (DataAccessException | InvalidAuthTokenException e) {
+    } catch (InvalidAuthTokenException | ServiceException e) {
       assertTrue(e instanceof InvalidAuthTokenException, "Expected InvalidAuthTokenException but got: " + e.getClass().getSimpleName());
     }
   }
 
   @Test
-  void testClear() throws DataAccessException {
+  void testClear() throws ServiceException {
     // Generate an auth token, then clear the DAO
     AuthData authData = authService.generateAuthToken("username");
     authService.clear();

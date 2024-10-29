@@ -5,6 +5,7 @@ import model.GameData;
 import exceptions.GameNotFoundException;
 import exceptions.InvalidPlayerColorException;
 import exceptions.PlayerSpotTakenException;
+import exceptions.ServiceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +23,7 @@ public class GameServiceTest {
   }
 
   @Test
-  public void testCreateGameSuccess() {
+  public void testCreateGameSuccess() throws ServiceException {
     // Since createGame now accepts only the gameName
     GameData game = gameService.createGame("Chess Match 1");
     assertNotNull(game);
@@ -33,7 +34,7 @@ public class GameServiceTest {
   }
 
   @Test
-  public void testListGames() {
+  public void testListGames() throws ServiceException {
     gameService.createGame("Chess Match 1");
     gameService.createGame("Chess Match 2");
 
@@ -75,7 +76,11 @@ public class GameServiceTest {
 
     // Second player tries to join as white
     assertThrows(PlayerSpotTakenException.class, () -> {
-      gameService.joinGame(gameID, "WHITE", "jane");
+      try {
+        gameService.joinGame(gameID, "WHITE", "jane");
+      } catch (ServiceException e) {
+        fail("ServiceException occurred: " + e.getMessage());
+      }
     });
   }
 
@@ -87,15 +92,23 @@ public class GameServiceTest {
 
     // Attempt to join with an invalid color
     assertThrows(InvalidPlayerColorException.class, () -> {
-      gameService.joinGame(gameID, "GREEN", "john");
+      try {
+        gameService.joinGame(gameID, "GREEN", "john");
+      } catch (ServiceException e) {
+        fail("ServiceException occurred: " + e.getMessage());
+      }
     });
   }
 
   @Test
-  public void testJoinGameNotFound() {
+  public void testJoinGameNotFound() throws ServiceException {
     // Attempt to join a non-existent game
     assertThrows(GameNotFoundException.class, () -> {
-      gameService.joinGame(999, "WHITE", "john");
+      try {
+        gameService.joinGame(999, "WHITE", "john");
+      } catch (ServiceException e) {
+        fail("ServiceException occurred: " + e.getMessage());
+      }
     });
   }
 }

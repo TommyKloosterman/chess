@@ -7,6 +7,7 @@ import service.AuthService;
 import dataaccess.UserDAO;
 import dataaccess.GameDAO;
 import dataaccess.AuthDAO;
+import dataaccess.DatabaseManager;
 import com.google.gson.Gson;
 import model.UserData;
 import model.AuthData;
@@ -19,31 +20,63 @@ import exceptions.PlayerSpotTakenException;
 import exceptions.InvalidPlayerColorException;
 import exceptions.GameNotFoundException;
 import java.util.Objects;
-import java.util.Map;
 
 public class Server {
     private static final Gson gson = new Gson();
+    private static boolean isInitialized = false;
+
     private UserService userService;
     private GameService gameService;
     private AuthService authService;
 
     public int run(int desiredPort) {
-        Spark.port(desiredPort);
-        Spark.staticFiles.location("web");
+        if (!isInitialized) {
+            isInitialized = true;
 
-        // Initialize DAOs and Services
+            // Set the port before mapping any routes
+            Spark.port(desiredPort);
+            Spark.staticFiles.location("web");
+
+            // Remove try-catch around initializeServices() call
+            initializeServices();
+
+            // Map your routes
+            mapRoutes();
+
+            // Start the server
+            Spark.init();
+            Spark.awaitInitialization();
+        }
+
+        return Spark.port();
+    }
+
+    private void initializeServices() {
+        // Initialize the database
+        DatabaseManager.initializeDatabase();
+
         AuthDAO sharedAuthDAO = new AuthDAO();
         authService = new AuthService(sharedAuthDAO);
         userService = new UserService(new UserDAO(), authService);
         gameService = new GameService(new GameDAO());
+    }
 
+    private void mapRoutes() {
         // Clear Application Data
         Spark.delete("/db", (req, res) -> {
-            userService.clear();
-            authService.clear();
-            gameService.clear();
-            res.status(200);
-            return gson.toJson(new EmptyResponse());
+            try {
+                // **Important:** Delete games first to avoid foreign key constraints
+                gameService.clear();
+                userService.clear();
+                authService.clear();
+                res.status(200);
+                return gson.toJson(new EmptyResponse());
+            } catch (Exception e) { // Catching generic Exception for broad error handling
+                System.err.println("Error clearing database: " + e.getMessage());
+                e.printStackTrace();
+                res.status(500); // Internal Server Error
+                return gson.toJson(new ErrorResponse("Error clearing database: " + e.getMessage()));
+            }
         });
 
         // Register User
@@ -111,12 +144,10 @@ public class Server {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
-                // Use getAuth to validate token and get user info
                 AuthData authData = authService.getAuth(authToken);
 
                 var games = gameService.listGames();
 
-                // Convert games to TestListEntry array
                 TestListEntry[] gameEntries = games.values().stream()
                         .map(game -> new TestListEntry(
                                 game.gameID(),
@@ -125,21 +156,19 @@ public class Server {
                                 game.blackUsername()))
                         .toArray(TestListEntry[]::new);
 
-                // Create and return the result
                 TestListResult listResult = new TestListResult();
                 listResult.setGames(gameEntries);
-
-                // Optional: Add logging for debugging
-                System.out.println("Returning Game List:");
-                for (TestListEntry entry : gameEntries) {
-                    System.out.println(entry);
-                }
 
                 res.status(200);
                 return gson.toJson(listResult);
             } catch (InvalidAuthTokenException e) {
                 res.status(401); // Unauthorized
                 return gson.toJson(new ErrorResponse("Error: unauthorized"));
+            } catch (Exception e) { // Catching generic Exception for broad error handling
+                System.err.println("Error listing games: " + e.getMessage());
+                e.printStackTrace();
+                res.status(500); // Internal Server Error
+                return gson.toJson(new ErrorResponse("Error listing games: " + e.getMessage()));
             }
         });
 
@@ -151,7 +180,6 @@ public class Server {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
-                // Use getAuth to validate token and get user info
                 AuthData authData = authService.getAuth(authToken);
 
                 var body = gson.fromJson(req.body(), GameRequest.class);
@@ -169,6 +197,11 @@ public class Server {
             } catch (InvalidAuthTokenException e) {
                 res.status(401); // Unauthorized
                 return gson.toJson(new ErrorResponse("Error: unauthorized"));
+            } catch (Exception e) { // Catching generic Exception for broad error handling
+                System.err.println("Error creating game: " + e.getMessage());
+                e.printStackTrace();
+                res.status(500); // Internal Server Error
+                return gson.toJson(new ErrorResponse("Error creating game: " + e.getMessage()));
             }
         });
 
@@ -180,7 +213,6 @@ public class Server {
                     res.status(401); // Unauthorized
                     return gson.toJson(new ErrorResponse("Error: unauthorized"));
                 }
-                // Use getAuth to validate token and get user info
                 AuthData authData = authService.getAuth(authToken);
 
                 var body = gson.fromJson(req.body(), JoinGameRequest.class);
@@ -202,15 +234,19 @@ public class Server {
             } catch (InvalidAuthTokenException e) {
                 res.status(401); // Unauthorized
                 return gson.toJson(new ErrorResponse("Error: unauthorized"));
+            } catch (Exception e) { // Catching generic Exception for broad error handling
+                System.err.println("Error joining game: " + e.getMessage());
+                e.printStackTrace();
+                res.status(500); // Internal Server Error
+                return gson.toJson(new ErrorResponse("Error joining game: " + e.getMessage()));
             }
         });
-
-        Spark.awaitInitialization();
-        return Spark.port();
     }
 
     public void stop() {
         Spark.stop();
+        Spark.awaitStop();
+        isInitialized = false; // Reset the initialization flag
     }
 }
 
@@ -253,8 +289,6 @@ class JoinGameRequest {
     }
 }
 
-// Updated TestListEntry Class
-
 class TestListEntry {
     private int gameID;
     private String gameName;
@@ -268,7 +302,6 @@ class TestListEntry {
         this.blackUsername = blackUsername;
     }
 
-    // Getters
     public int getGameID() {
         return gameID;
     }
@@ -283,23 +316,6 @@ class TestListEntry {
 
     public String getBlackUsername() {
         return blackUsername;
-    }
-
-    // Setters if needed
-    public void setGameID(int gameID) {
-        this.gameID = gameID;
-    }
-
-    public void setGameName(String gameName) {
-        this.gameName = gameName;
-    }
-
-    public void setWhiteUsername(String whiteUsername) {
-        this.whiteUsername = whiteUsername;
-    }
-
-    public void setBlackUsername(String blackUsername) {
-        this.blackUsername = blackUsername;
     }
 
     @Override

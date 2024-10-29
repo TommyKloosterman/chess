@@ -10,7 +10,6 @@ public class Main {
         // Create and run the server (this starts the HTTP server on port 8080)
         Server server = new Server();
         int port = server.run(8080);
-
         System.out.println("Server is running on port " + port + "...");
     }
 }
