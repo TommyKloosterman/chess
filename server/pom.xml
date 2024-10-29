@@ -110,7 +110,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Passoff Dependencies -->
+        <!-- Pass-off Dependencies -->
         <dependency>
             <groupId>edu.byu.cs240</groupId>
             <artifactId>passoff-dependencies</artifactId>
