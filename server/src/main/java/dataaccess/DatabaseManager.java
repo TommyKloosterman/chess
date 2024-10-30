@@ -1,5 +1,6 @@
 package dataaccess;
 
+import java.io.InputStream;
 import java.sql.*;
 import java.util.Properties;
 
@@ -10,11 +11,16 @@ public class DatabaseManager {
     private static final String CONNECTION_URL;
 
     /*
-     * Load the database information for the db.properties file.
+     * Load the database information from the db.properties file.
      */
     static {
         try {
-            try (var propStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db.properties")) {
+            // Explicitly load the MySQL JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
+            // Load properties from db.properties
+            try (InputStream propStream = DatabaseManager.class.getClassLoader().getResourceAsStream("db.properties")) {
+
                 if (propStream == null) {
                     throw new Exception("Unable to load db.properties");
                 }
@@ -24,49 +30,164 @@ public class DatabaseManager {
                 USER = props.getProperty("db.user");
                 PASSWORD = props.getProperty("db.password");
 
-                var host = props.getProperty("db.host");
-                var port = Integer.parseInt(props.getProperty("db.port"));
-                CONNECTION_URL = String.format("jdbc:mysql://%s:%d", host, port);
+                String host = props.getProperty("db.host");
+                int port = Integer.parseInt(props.getProperty("db.port"));
+                CONNECTION_URL = String.format("jdbc:mysql://%s:%d/%s?useSSL=false&serverTimezone=UTC", host, port, DATABASE_NAME);
+
+                System.out.println("Database Name: " + DATABASE_NAME);
+                System.out.println("User: " + USER);
+                System.out.println("Connection URL: " + CONNECTION_URL);
             }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("MySQL JDBC Driver not found. Include it in your library path.", e);
         } catch (Exception ex) {
-            throw new RuntimeException("unable to process db.properties. " + ex.getMessage());
+            throw new RuntimeException("Unable to process db.properties. " + ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * Public no-argument constructor, required by reflection in tests.
+     */
+    public DatabaseManager() {
+        // No additional initialization needed here
+    }
+
+    /**
+     * Initializes the database by creating it and setting up tables.
+     */
+    public static void initializeDatabase() throws DataAccessException {
+        createDatabase();
+        initializeTables();
     }
 
     /**
      * Creates the database if it does not already exist.
      */
-    static void createDatabase() throws DataAccessException {
+    public static void createDatabase() throws DataAccessException {
+        String createDbStatement = "CREATE DATABASE IF NOT EXISTS " + DATABASE_NAME;
+        String connectionUrlWithoutDb = CONNECTION_URL.substring(0, CONNECTION_URL.lastIndexOf("/"));
+
+        Connection conn = null;
+        PreparedStatement preparedStatement = null;
+
         try {
-            var statement = "CREATE DATABASE IF NOT EXISTS " + DATABASE_NAME;
-            var conn = DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD);
-            try (var preparedStatement = conn.prepareStatement(statement)) {
-                preparedStatement.executeUpdate();
-            }
+            conn = DriverManager.getConnection(connectionUrlWithoutDb, USER, PASSWORD);
+            preparedStatement = conn.prepareStatement(createDbStatement);
+            preparedStatement.executeUpdate();
+            System.out.println("Database checked/created successfully.");
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            throw new DataAccessException("Error creating database: " + e.getMessage(), e);
+        } finally {
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    System.err.println("Failed to close PreparedStatement: " + e.getMessage());
+                }
+            }
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    System.err.println("Failed to close Connection: " + e.getMessage());
+                }
+            }
         }
     }
 
     /**
-     * Create a connection to the database and sets the catalog based upon the
-     * properties specified in db.properties. Connections to the database should
-     * be short-lived, and you must close the connection when you are done with it.
-     * The easiest way to do that is with a try-with-resource block.
-     * <br/>
-     * <code>
-     * try (var conn = DbInfo.getConnection(databaseName)) {
-     * // execute SQL statements.
-     * }
-     * </code>
+     * Initializes the database tables if they do not exist.
      */
-    static Connection getConnection() throws DataAccessException {
+    public static void initializeTables() throws DataAccessException {
+        String createUserTable = "CREATE TABLE IF NOT EXISTS UserData ("
+                + "username VARCHAR(50) PRIMARY KEY,"
+                + "hashedPassword VARCHAR(60) NOT NULL,"
+                + "email VARCHAR(100) NOT NULL"
+                + ");";
+
+        String createAuthTable = "CREATE TABLE IF NOT EXISTS AuthData ("
+                + "authToken VARCHAR(36) PRIMARY KEY,"
+                + "username VARCHAR(50) NOT NULL,"
+                + "FOREIGN KEY (username) REFERENCES UserData(username)"
+                + ");";
+
+        String createGameTable = "CREATE TABLE IF NOT EXISTS GameData ("
+                + "gameID INT AUTO_INCREMENT PRIMARY KEY,"
+                + "whiteUsername VARCHAR(50),"
+                + "blackUsername VARCHAR(50),"
+                + "gameName VARCHAR(50),"
+                + "gameState JSON,"
+                + "FOREIGN KEY (whiteUsername) REFERENCES UserData(username),"
+                + "FOREIGN KEY (blackUsername) REFERENCES UserData(username)"
+                + ");";
+
+        Connection conn = null;
+        Statement stmt = null;
+
         try {
-            var conn = DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD);
-            conn.setCatalog(DATABASE_NAME);
-            return conn;
+            conn = getConnection();
+            stmt = conn.createStatement();
+            stmt.executeUpdate(createUserTable);
+            stmt.executeUpdate(createAuthTable);
+            stmt.executeUpdate(createGameTable);
+            System.out.println("Tables initialized successfully.");
         } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
+            throw new DataAccessException("Error initializing tables: " + e.getMessage(), e);
+        } finally {
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {
+                    System.err.println("Failed to close Statement: " + e.getMessage());
+                }
+            }
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    System.err.println("Failed to close Connection: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Static method to get a database connection.
+     */
+    public static Connection getConnection() throws DataAccessException {
+        try {
+            return DriverManager.getConnection(CONNECTION_URL, USER, PASSWORD);
+        } catch (SQLException e) {
+            throw new DataAccessException("Failed to connect to the database: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Instance method to get a database connection, required for compatibility with the test file.
+     */
+    public Connection getConnectionInstance() throws DataAccessException {
+        return DatabaseManager.getConnection(); // Calls the static method
+    }
+
+    /**
+     * Test method to confirm the database connection is working.
+     */
+    public static void testConnection() {
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            System.out.println("Connection to the database was successful!");
+        } catch (DataAccessException e) {
+            System.out.println("Failed to connect to the database.");
+            e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    System.err.println("Failed to close Connection: " + e.getMessage());
+                }
+            }
         }
     }
 }

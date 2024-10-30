@@ -8,6 +8,7 @@ import dataaccess.UserDAO;
 import dataaccess.GameDAO;
 import dataaccess.AuthDAO;
 import dataaccess.DatabaseManager;
+import dataaccess.DataAccessException;
 import com.google.gson.Gson;
 import model.UserData;
 import model.AuthData;
@@ -37,7 +38,7 @@ public class Server {
             Spark.port(desiredPort);
             Spark.staticFiles.location("web");
 
-            // Remove try-catch around initializeServices() call
+            // Initialize services
             initializeServices();
 
             // Map your routes
@@ -52,8 +53,15 @@ public class Server {
     }
 
     private void initializeServices() {
-        // Initialize the database
-        DatabaseManager.initializeDatabase();
+        try {
+            // Initialize the database
+            DatabaseManager.initializeDatabase();
+        } catch (DataAccessException e) {
+            System.err.println("Failed to initialize the database: " + e.getMessage());
+            e.printStackTrace();
+            // Optionally, stop server initialization
+            throw new RuntimeException("Failed to initialize the database.", e);
+        }
 
         AuthDAO sharedAuthDAO = new AuthDAO();
         authService = new AuthService(sharedAuthDAO);

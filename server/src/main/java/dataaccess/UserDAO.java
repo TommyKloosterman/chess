@@ -16,15 +16,13 @@ public class UserDAO {
    * @throws DataAccessException If an error occurs during the database operation.
    */
   public void insertUser(UserData user) throws DataAccessException {
-    String sql = "INSERT INTO Users (username, password_hash, email) VALUES (?, ?, ?)";
+    String sql = "INSERT INTO UserData (username, hashedPassword, email) VALUES (?, ?, ?)";
     try (Connection conn = DatabaseManager.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-      // Hash the password before storing
-      String hashedPassword = BCrypt.hashpw(user.password(), BCrypt.gensalt());
-
+      // Assume password is already hashed in UserService
       stmt.setString(1, user.username());
-      stmt.setString(2, hashedPassword);
+      stmt.setString(2, user.password()); // Hashed password
       stmt.setString(3, user.email());
       stmt.executeUpdate();
 
@@ -45,7 +43,7 @@ public class UserDAO {
    * @throws DataAccessException If an error occurs during the database operation.
    */
   public UserData getUser(String username) throws DataAccessException {
-    String sql = "SELECT * FROM Users WHERE username = ?";
+    String sql = "SELECT * FROM UserData WHERE username = ?";
     try (Connection conn = DatabaseManager.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -54,7 +52,7 @@ public class UserDAO {
 
       if (rs.next()) {
         String retrievedUsername = rs.getString("username");
-        String passwordHash = rs.getString("password_hash");
+        String passwordHash = rs.getString("hashedPassword");
         String email = rs.getString("email");
 
         // Create a UserData object with the retrieved information
@@ -91,7 +89,7 @@ public class UserDAO {
    * @throws DataAccessException If an error occurs during the database operation.
    */
   public void clear() throws DataAccessException {
-    String sql = "DELETE FROM Users";
+    String sql = "DELETE FROM UserData";
     try (Connection conn = DatabaseManager.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -110,14 +108,14 @@ public class UserDAO {
    */
   public List<UserData> getAllUsers() throws DataAccessException {
     List<UserData> users = new ArrayList<>();
-    String sql = "SELECT * FROM Users";
+    String sql = "SELECT * FROM UserData";
     try (Connection conn = DatabaseManager.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql);
          ResultSet rs = stmt.executeQuery()) {
 
       while (rs.next()) {
         String username = rs.getString("username");
-        String passwordHash = rs.getString("password_hash");
+        String passwordHash = rs.getString("hashedPassword");
         String email = rs.getString("email");
         users.add(new UserData(username, passwordHash, email));
       }
